@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}新同学注册 - 思政案例教学资源库{% endblock %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 85vh;">
+    <div class="card shadow-lg border-0 overflow-hidden animate__animated animate__fadeInUp" style="width: 460px; border-radius: 16px;">
+
+        <div class="card-header bg-primary text-white text-center py-4 border-0"
+             style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);">
+            <div class="mb-2"><i class="bi bi-person-plus-fill fs-1"></i></div>
+            <h4 class="fw-bold mb-1">新同学注册</h4>
+            <p class="small text-white-50 mb-0">加入思政案例库，开启学习之旅</p>
+        </div>
+
+        <div class="card-body p-4 p-md-5 bg-white">
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                {% if form.errors %}
+                <div class="alert alert-danger py-2 small border-0 bg-danger bg-opacity-10 text-danger mb-4">
+                    <ul class="mb-0 ps-3">
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <div class="mb-3 position-relative">
+                    <label class="form-label small text-muted fw-bold">用户名</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-person"></i></span>
+                        {{ form.username }}
+                    </div>
+                    <div class="form-text small">建议使用学号作为用户名</div>
+                </div>
+
+                <div class="mb-3 position-relative">
+                    <label class="form-label small text-muted fw-bold">电子邮箱 <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
+                        {{ form.email }}
+                    </div>
+                    <div class="form-text small text-primary">
+                        <i class="bi bi-info-circle"></i> 必填，用于忘记密码时找回账号
+                    </div>
+                </div>
+
+                {% for field in form %}
+                    {% if field.name != 'username' and field.name != 'email' %}
+                        <div class="mb-3">
+                            <label class="form-label small text-muted fw-bold">{{ field.label }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted">
+                                    {% if '确认' in field.label %}
+                                        <i class="bi bi-shield-check"></i>
+                                    {% else %}
+                                        <i class="bi bi-lock"></i>
+                                    {% endif %}
+                                </span>
+                                {{ field }}
+                            </div>
+                            {% if field.help_text %}
+                                <div class="form-text small text-muted">{{ field.help_text|safe }}</div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+
+                <div class="d-grid mb-3 mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg fw-bold shadow-sm"
+                            style="border-radius: 8px; transition: all 0.2s;">
+                        <i class="bi bi-check-circle-fill me-2"></i>立即注册
+                    </button>
+                </div>
+
+                <div class="text-center mt-3">
+                    <a href="{% url 'login' %}" class="text-decoration-none text-muted small">
+                        已有账号？ <span class="text-primary fw-bold">点击登录</span>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* 覆盖 input 聚焦样式，保持蓝色主题 */
+    .form-control:focus {
+        background-color: #fff !important;
+        border-color: #0d6efd !important;
+        box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1) !important;
+    }
+    .input-group-text {
+        border-color: #ced4da; /* 与 bootstrap 默认边框一致 */
+        border-radius: 8px 0 0 8px !important;
+    }
+    /* 修正 forms.py 中定义的样式与 input-group 的配合 */
+    .form-control {
+        border-color: #ced4da;
+    }
+</style>
+{% endblock %}

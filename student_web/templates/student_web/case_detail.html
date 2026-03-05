@@ -1,0 +1,926 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load markdown_extras %}
+
+{% block title %}{{ case.title }} - 沉浸式学习{% endblock %}
+
+{% block layout_container %}container-fluid p-0{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://npm.elemecdn.com/github-markdown-css@5.2.0/github-markdown-light.min.css">
+<link rel="stylesheet" href="https://npm.elemecdn.com/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+
+<style>
+    /* ================= 样式层 (原汁原味保留) ================= */
+    link[rel="icon"] { display: none; }
+    [v-cloak] { display: none !important; }
+
+    :root {
+        --sidebar-width: 360px;
+        --gap-size: 32px;
+        --standard-width: 1320px;
+        --content-padding: max(20px, calc((100vw - var(--standard-width)) / 2));
+        --color-brand: #00aeec;
+        --color-brand-hover: #00a1d6;
+        --color-success: #34c759;
+        --color-warning: #ffcc00;
+        --color-danger: #ff4757;
+        --text-main: #18191c;
+        --text-regular: #61666d;
+        --text-secondary: #9499a0;
+        --doc-font-size: 16px;
+        --doc-line-height: 1.8;
+        --bg-page: #f6f7f8;
+        --bg-card: #ffffff;
+        --bg-input: #f1f2f3;
+        --bg-reply-box: #f9fafb;
+        --border-color: #e3e5e7;
+        --radius-std: 6px;
+        --radius-lg: 12px;
+    }
+
+    body {
+        background-color: var(--bg-page);
+        color: var(--text-main);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        overflow-x: hidden;
+    }
+
+    /* 悬浮工具栏 */
+    #floatingToolbar {
+        position: absolute; top: 30px; right: 30px; z-index: 100;
+        display: flex; flex-direction: column; align-items: center;
+        gap: 12px; padding: 16px 8px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 50px;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    #floatingToolbar:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
+
+    .tool-icon-btn {
+        width: 36px; height: 36px; border-radius: 50%; border: none;
+        background: transparent; color: var(--text-regular); font-size: 1.2rem;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        transition: all 0.2s;
+    }
+    .tool-icon-btn:hover { background-color: var(--bg-input); color: var(--color-brand); }
+    .tool-icon-btn.active-fav { color: var(--color-warning) !important; }
+
+    .glass-divider { width: 20px; height: 1px; background: rgba(0,0,0,0.1); margin: 2px 0; }
+
+    #immersionToggleText {
+        writing-mode: vertical-rl; text-orientation: upright; font-size: 12px;
+        color: var(--text-secondary); letter-spacing: 4px; padding: 8px 0;
+        cursor: pointer; border: none; background: transparent; font-weight: 600;
+        transition: color 0.2s;
+    }
+    #immersionToggleText:hover { color: var(--color-brand); }
+
+    /* Markdown 样式 */
+    .markdown-body {
+        font-size: var(--doc-font-size) !important;
+        line-height: var(--doc-line-height) !important;
+        color: var(--text-main) !important;
+        background: transparent !important;
+        transition: font-size 0.2s ease, line-height 0.2s ease;
+    }
+    .markdown-body table { width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid var(--border-color); }
+    .markdown-body table tr { background-color: #fff !important; border-top: 1px solid var(--border-color); }
+    .markdown-body th, .markdown-body td { padding: 12px 16px; border: 1px solid var(--border-color); }
+    .markdown-body th { font-weight: 600; background-color: #fafafa !important; }
+    .markdown-body img { border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: block; margin: 20px auto; background: #fff; }
+    .markdown-body blockquote { border-left: 4px solid var(--color-brand); background: #f0f7ff; padding: 16px; color: var(--text-regular); }
+
+    /* 布局系统 */
+    #layoutRoot { width: 100%; padding: 0 var(--content-padding); transition: padding 0.5s ease; }
+    body.wide-active #layoutRoot { padding-right: 20px; }
+
+    .layout-wrapper { display: flex; gap: var(--gap-size); margin-top: 32px; align-items: flex-start; }
+    .layout-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 24px; transition: width 0.5s ease; }
+    .layout-sidebar { width: var(--sidebar-width); flex-shrink: 0; display: flex; flex-direction: column; gap: 24px; }
+
+    .content-window {
+        position: relative; background: var(--bg-card); border-radius: var(--radius-lg);
+        box-shadow: 0 4px 30px rgba(0,0,0,0.03); border: 1px solid var(--border-color);
+        overflow: hidden; transition: height 0.5s;
+    }
+    .content-window.mode-video { background: #000; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; }
+    .content-window.mode-text { height: 75vh; min-height: 600px; display: flex; flex-direction: column; }
+    .content-window.mode-file { height: 600px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fcfcfc; }
+
+    body.wide-active .content-window.mode-text { height: 90vh; }
+
+    .doc-viewer { flex: 1; overflow-y: auto; padding: 40px 0; scrollbar-width: thin; scroll-behavior: smooth; }
+    .doc-content-wrapper { max-width: 900px; margin: 0 auto; padding: 0 40px; transition: max-width 0.5s; }
+    body.wide-active .doc-content-wrapper { max-width: 1200px; }
+
+    .content-card, .sidebar-card {
+        background: var(--bg-card); border-radius: var(--radius-lg);
+        box-shadow: 0 4px 30px rgba(0,0,0,0.03); border: 1px solid var(--border-color);
+        padding: 32px;
+    }
+    .sidebar-card { padding: 0; display: flex; flex-direction: column; }
+
+    /* 资源卡片 */
+    .resource-card {
+        background: #fff; padding: 48px; border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.04); text-align: center;
+        max-width: 500px; width: 90%; border: 1px solid var(--border-color);
+        transition: transform 0.3s ease;
+    }
+    .resource-card:hover { transform: translateY(-5px); }
+    .resource-icon { font-size: 4rem; color: var(--color-brand); margin-bottom: 24px; opacity: 0.9; }
+    .resource-btn {
+        background: var(--color-brand); color: #fff; border: none; padding: 12px 36px;
+        border-radius: 50px; font-weight: 600; font-size: 1.1rem; transition: 0.2s;
+        text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .resource-btn:hover { background: var(--color-brand-hover); color: #fff; box-shadow: 0 4px 15px rgba(0,174,236,0.3); }
+
+    /* 目录与笔记 */
+    .dir-card { height: 100%; max-height: 75vh; }
+    .dir-scroll-box { overflow-y: auto; flex: 1; }
+    .chapter-item {
+        padding: 14px 24px; border-bottom: 1px solid rgba(0,0,0,0.02); cursor: pointer;
+        display: flex; align-items: center; color: var(--text-main); text-decoration: none; transition: 0.2s;
+    }
+    .chapter-item:hover { background-color: var(--bg-page); color: var(--color-brand); }
+    .chapter-item.active { background-color: #eef6ff; color: var(--color-brand); border-left: 3px solid var(--color-brand); }
+
+    .note-header {
+        background: linear-gradient(135deg, #34c759, #30b952); color: white; padding: 16px 24px;
+        font-weight: 600; font-size: 1rem; border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+    .chapter-eyebrow {
+        display: inline-flex; font-size: 0.85rem; font-weight: 600; color: var(--color-brand);
+        background: rgba(0,122,255,0.1); padding: 6px 12px; border-radius: 4px; margin-bottom: 16px;
+    }
+
+    /* 评论系统 */
+    .comment-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .comment-title { font-size: 1.25rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .comment-count { font-size: 0.85rem; color: var(--text-secondary); font-weight: normal; }
+    .filter-tabs { display: flex; gap: 8px; background: var(--bg-input); padding: 4px; border-radius: 20px; }
+    .tab-btn { border: none; background: transparent; padding: 6px 16px; font-size: 13px; color: var(--text-regular); cursor: pointer; font-weight: 500; border-radius: 16px; transition: 0.2s; }
+    .tab-btn.active { background: #fff; color: var(--color-brand); font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+    .user-avatar { width: 48px; height: 48px; border-radius: 50%; background: #e3e5e7; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 600; color: #9499a0; font-size: 1.2rem; border: 1px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+    .comment-send-box { display: flex; gap: 16px; margin-bottom: 40px; }
+    .textarea-wrapper { flex: 1; background: #ffffff; border-radius: var(--radius-std); border: 1px solid #e3e5e7; transition: 0.3s; position: relative; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+    .textarea-wrapper:focus-within { background: #fff; border-color: var(--color-brand); box-shadow: 0 0 0 3px rgba(0,174,236,0.15); }
+    .ipt-txt { width: 100%; border: none; background: transparent; padding: 12px; min-height: 64px; resize: none; outline: none; font-size: 14px; color: var(--text-main); }
+    .submit-btn { width: 80px; height: 64px; border: none; border-radius: var(--radius-std); background: var(--color-brand); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .submit-btn:hover { background: var(--color-brand-hover); }
+    .submit-btn:disabled { background: #e3e5e7; color: #9499a0; cursor: not-allowed; }
+
+    .comment-item { display: flex; gap: 20px; padding: 24px 0; border-bottom: 1px solid var(--border-color); }
+    .comment-item:last-child { border-bottom: none; }
+    .content-warp { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .user-info { font-size: 13px; font-weight: 600; color: var(--text-regular); margin-bottom: 6px; cursor: pointer; }
+    .source-badge { font-size: 12px; color: var(--text-secondary); background: var(--bg-input); padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: 400; }
+    .root-text { font-size: 15px; line-height: 24px; color: var(--text-main); margin-bottom: 8px; white-space: pre-wrap; word-break: break-word; }
+
+    .action-box, .sub-action-box { display: flex; align-items: center; gap: 16px; font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+    .btn-action { cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: 0.2s; }
+    .btn-action:hover { color: var(--color-brand); }
+    .btn-action.liked { color: var(--color-brand); }
+    .delete-btn:hover { color: var(--color-danger); }
+
+    .sub-reply-list { background-color: var(--bg-reply-box); padding: 16px; border-radius: var(--radius-std); margin-top: 12px; display: flex; flex-direction: column; gap: 16px; }
+    .sub-reply-item { display: flex; gap: 12px; font-size: 14px; }
+    .sub-avatar-img { width: 24px; height: 24px; font-size: 0.8rem; border-radius: 50%; background: #e3e5e7; display: flex; justify-content: center; align-items: center; color: #999; flex-shrink: 0; margin-top: 2px; }
+    .sub-content { flex: 1; }
+    .sub-text { font-size: 14px; line-height: 1.6; color: var(--text-main); }
+    .sub-user-name { font-weight: 600; color: var(--text-regular); cursor: pointer; margin-right: 6px; font-size: 13px; }
+    .sub-user-name:hover { color: var(--color-brand); }
+    .reply-target-name { color: var(--color-brand); font-weight: 500; margin: 0 4px; cursor: pointer; }
+    .sub-action-box { margin-top: 6px; font-size: 12px; }
+
+    .inline-reply-box { margin-top: 12px; display: flex; gap: 12px; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from {opacity:0; transform:translateY(-5px);} to {opacity:1; transform:translateY(0);} }
+    .inline-textarea { flex: 1; border: 1px solid var(--border-color); background: #fff; border-radius: 4px; padding: 8px 10px; font-size: 14px; min-height: 36px; resize: none; outline: none; transition: 0.2s; }
+    .inline-textarea:focus { border-color: var(--color-brand); }
+    .mini-btn-group { display: flex; flex-direction: column; gap: 8px; }
+    .mini-btn { padding: 0 12px; height: 36px; border-radius: 4px; border: none; font-size: 12px; cursor: pointer; font-weight: 600; white-space: nowrap; }
+    .mini-send { background: var(--color-brand); color: #fff; }
+    .mini-cancel { background: transparent; border: 1px solid var(--border-color); color: var(--text-regular); }
+    .mini-cancel:hover { background: #fff; }
+
+    .skeleton-box { background: linear-gradient(90deg, #f1f2f3 25%, #e3e5e7 37%, #f1f2f3 63%); background-size: 400% 100%; animation: skeleton 1.4s ease infinite; border-radius: 4px; }
+    @keyframes skeleton { 0% {background-position: 100% 50%} 100% {background-position: 0 50%} }
+    #static-loading-placeholder { padding: 40px 0; }
+    .empty-state { text-align: center; padding: 40px 0; color: var(--text-secondary); font-size: 14px; }
+</style>
+
+<div id="layoutRoot" class="pb-5">
+    <nav aria-label="breadcrumb" class="my-4 d-flex justify-content-between align-items-center">
+        <ol class="breadcrumb mb-0 ps-1">
+            <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">首页</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'case_detail' case.id %}" class="text-decoration-none text-muted">{{ case.title }}</a></li>
+            <li class="breadcrumb-item active fw-bold text-dark" aria-current="page">{{ current_chapter.title }}</li>
+        </ol>
+    </nav>
+
+    <div class="layout-wrapper">
+        <div class="layout-main">
+            <div class="content-window {% if current_chapter.chapter_type == 'text' %}mode-text{% elif current_chapter.chapter_type == 'file' %}mode-file{% else %}mode-video{% endif %}">
+                {% if current_chapter.chapter_type == 'text' %}
+                <div id="floatingToolbar">
+                    <button class="tool-icon-btn" onclick="toggleBold()" title="加粗"><span style="font-weight:bold;">B</span></button>
+                    <button class="tool-icon-btn" onclick="adjustFontSize(-2)" title="小字号"><i class="bi bi-dash-lg"></i></button>
+                    <button class="tool-icon-btn" onclick="adjustFontSize(2)" title="大字号"><i class="bi bi-plus-lg"></i></button>
+                    <div class="glass-divider"></div>
+                    <button class="tool-icon-btn {% if is_favorited %}active-fav{% endif %}" id="floatFavBtn" onclick="toggleFavorite()" title="选课">
+                        <i class="bi {% if is_favorited %}bi-star-fill{% else %}bi-star{% endif %}"></i>
+                    </button>
+                    <div class="glass-divider"></div>
+                    <button id="immersionToggleText" onclick="toggleWideMode()" title="沉浸模式">沉浸阅读</button>
+                    <div class="glass-divider"></div>
+                    <button class="tool-icon-btn" onclick="scrollToTop()" title="回到顶部"><i class="bi bi-arrow-up"></i></button>
+                </div>
+                {% endif %}
+
+                {% if current_chapter %}
+                    {% if current_chapter.chapter_type == 'video' %}
+                        {% if current_chapter.video_file %}
+                            <div id="interactive-video-app" style="position: relative; width: 100%; height: 100%; background: #000; display: flex; align-items: center; justify-content: center;">
+                                <video ref="courseVideo" controls controlsList="nodownload" style="width:100%; height:100%; max-height: 100%; outline: none;" @timeupdate="checkTime">
+                                    <source src="{{ current_chapter.video_file.url }}" type="video/mp4">
+                                </video>
+
+                                <div v-show="showOverlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); flex-direction: column; justify-content: center; align-items: center; color: #fff; z-index: 99; padding: 20px; text-align: center;">
+
+                                    <div v-if="!showFeedback" style="transform: translateY(100px);">
+                                        <h3 style="margin-bottom: 30px; font-size: 24px; font-weight: 600;">
+                                            [[ currentPoint.question ]]
+                                        </h3>
+                                        <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
+                                            <button v-for="opt in currentPoint.options"
+                                                    @click="handleChoice(opt.feedback)"
+                                                    class="btn btn-primary shadow-sm"
+                                                    style="padding: 10px 30px; font-size: 16px; border-radius: 50px;">
+                                                [[ opt.text ]]
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div v-else style="transform: translateY(50px);">
+                                        <h3 style="margin-bottom: 20px; font-size: 22px; color: #00aeec;">💡
+                                            教师解析</h3>
+                                        <p style="font-size: 18px; line-height: 1.6; max-width: 600px; margin-bottom: 30px;">
+                                            [[ currentFeedback ]]
+                                        </p>
+                                        <button @click="continueVideo()" class="btn btn-success shadow-sm"
+                                                style="padding: 10px 40px; font-size: 16px; border-radius: 50px;">
+                                            <i class="bi bi-play-fill"></i> 继续播放
+                                        </button>
+                                    </div>
+
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="d-flex flex-column align-items-center justify-content-center h-100 text-secondary"><p>未上传视频文件</p></div>
+                        {% endif %}
+
+                    {% elif current_chapter.chapter_type == 'file' %}
+                        <div class="resource-card">
+                            <i class="bi bi-cloud-arrow-down-fill resource-icon"></i>
+                            <h3 class="fw-bold mb-3">{{ current_chapter.title }}</h3>
+                            <p class="text-secondary mb-4">本章节提供外部资源下载，请点击下方按钮前往获取资料。</p>
+
+                            {% if current_chapter.video_url %}
+                                <a href="{{ current_chapter.video_url }}" target="_blank" class="resource-btn">
+                                    <i class="bi bi-box-arrow-up-right"></i> 前往下载 / 查看
+                                </a>
+                                <div class="mt-4 pt-3 border-top">
+                                    <div class="text-muted small mb-1">资源链接 (可复制):</div>
+                                    <code class="user-select-all text-break text-dark bg-light px-2 py-1 rounded d-block">{{ current_chapter.video_url }}</code>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-warning d-inline-block px-4">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>管理员暂未配置资源链接
+                                </div>
+                            {% endif %}
+                        </div>
+
+                    {% elif current_chapter.chapter_type == 'text' %}
+                        <div class="doc-viewer">
+                            <div class="doc-content-wrapper">
+                                <div class="pb-4 mb-4 border-bottom position-relative">
+                                    <div class="chapter-eyebrow"><i class="bi bi-bookmark-fill me-2"></i>当前章节</div>
+                                    <h1 class="fw-bold m-0" style="font-size:2.4rem;">{{ current_chapter.title }}</h1>
+                                </div>
+                                <div class="text-secondary">
+                                    {% if current_chapter.content_md %}
+                                        <article class="markdown-body">{{ current_chapter.content_md|markdown|safe }}</article>
+                                    {% else %}
+                                        <div class="text-center text-muted py-5">暂无内容</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <div class="content-card" style="min-height: 400px;">
+                <div id="static-loading-placeholder">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="fw-bold m-0">互动交流</h5>
+                    </div>
+                    <div class="d-flex mb-5" style="gap:20px;">
+                        <div class="skeleton-box" style="width:48px;height:48px;border-radius:50%;"></div>
+                        <div style="flex:1">
+                            <div class="skeleton-box mb-3" style="width:100%;height:60px;"></div>
+                            <div class="skeleton-box" style="width:80px;height:40px;float:right;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="comment-app" v-cloak>
+                    <div class="comment-header">
+                        <div class="comment-title">互动交流 <span class="comment-count">[[ comments.length ]]</span></div>
+                        <div class="filter-tabs">
+                            <button class="tab-btn" :class="{ active: filterMode === 'all' }" @click="filterMode = 'all'">全部评论</button>
+                            <button class="tab-btn" :class="{ active: filterMode === 'current' }" @click="filterMode = 'current'">只看本章</button>
+                        </div>
+                    </div>
+
+                    {% if user.is_authenticated %}
+                    <div class="comment-send-box">
+                        <div class="user-avatar">{{ user.username.0|upper }}</div>
+                        <div class="textarea-wrapper">
+                            <textarea class="ipt-txt" rows="3" v-model="newContent" placeholder="发表你的观点..." ref="mainInput"></textarea>
+                        </div>
+                        <button class="submit-btn" @click="submitComment(null)" :disabled="isSubmitting || !newContent.trim()">
+                            <span v-if="isSubmitting">...</span><span v-else>发布</span>
+                        </button>
+                    </div>
+                    {% endif %}
+
+                    <transition-group name="list" tag="div">
+                        <div v-for="comment in rootComments" :key="comment.id" class="comment-item">
+                            <div class="user-avatar">[[ comment.username.charAt(0).toUpperCase() ]]</div>
+
+                            <div class="content-warp">
+                                <div class="user-info">
+                                    <span>[[ comment.username ]]</span>
+                                    <span v-if="filterMode === 'all' && comment.chapter_id !== currentChapterId && comment.chapter_title"
+                                          class="source-badge">[[ comment.chapter_title ]]</span>
+                                </div>
+                                <div class="root-text">[[ comment.content ]]</div>
+
+                                <div class="action-box">
+                                    <span>[[ formatTime(comment.created_at) ]]</span>
+                                    <span class="btn-action" :class="{ liked: comment.isLiked }" @click="toggleLike(comment)">
+                                        <i class="bi" :class="comment.isLiked ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-up'"></i>
+                                        <span v-if="comment.likeCount > 0">[[ comment.likeCount ]]</span>
+                                        <span v-else>点赞</span>
+                                    </span>
+                                    {% if user.is_authenticated %}
+                                    <span class="btn-action" @click="toggleReplyBox(comment.id)">回复</span>
+                                    {% endif %}
+                                    <span v-if="currentUserId && comment.user_id == currentUserId" class="btn-action delete-btn" @click="deleteComment(comment.id)">删除</span>
+                                </div>
+
+                                <div v-if="comment.children && comment.children.length > 0" class="sub-reply-list">
+                                    <div v-for="sub in comment.children" :key="sub.id" class="sub-reply-item">
+                                        <div class="sub-avatar-img">[[ sub.username.charAt(0).toUpperCase() ]]</div>
+
+                                        <div class="sub-content">
+                                            <div class="sub-text">
+                                                <span class="sub-user-name">[[ sub.username ]]</span>
+                                                <span v-if="sub.replyToUser">回复 <span class="reply-target-name">@ [[ sub.replyToUser ]]</span> :</span>
+                                                <span>[[ sub.content ]]</span>
+                                            </div>
+
+                                            <div class="sub-action-box">
+                                                <span>[[ formatTime(sub.created_at) ]]</span>
+                                                <span class="btn-action" :class="{ liked: sub.isLiked }" @click="toggleLike(sub)">
+                                                    <i class="bi" :class="sub.isLiked ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-up'"></i>
+                                                    <span v-if="sub.likeCount > 0">[[ sub.likeCount ]]</span>
+                                                    <span v-else>点赞</span>
+                                                </span>
+                                                {% if user.is_authenticated %}
+                                                <span class="btn-action" @click="toggleReplyBox(sub.id)">回复</span>
+                                                {% endif %}
+                                                <span v-if="currentUserId && sub.user_id == currentUserId" class="btn-action delete-btn" @click="deleteComment(sub.id)">删除</span>
+                                            </div>
+
+                                            <div v-if="activeReplyId === sub.id" class="inline-reply-box">
+                                                <textarea class="inline-textarea" v-model="replyContent" :placeholder="'回复 @' + sub.username + ' :'" ref="subInput"></textarea>
+                                                <div class="mini-btn-group">
+                                                    <button class="mini-btn mini-send" @click="submitComment(sub)">发布</button>
+                                                    <button class="mini-btn mini-cancel" @click="toggleReplyBox(null)">取消</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div v-if="activeReplyId === comment.id" class="inline-reply-box">
+                                    <textarea class="inline-textarea" v-model="replyContent" :placeholder="'回复 @' + comment.username + ' :'" ref="replyInput"></textarea>
+                                    <div class="mini-btn-group">
+                                        <button class="mini-btn mini-send" @click="submitComment(comment)">发布</button>
+                                        <button class="mini-btn mini-cancel" @click="toggleReplyBox(null)">取消</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </transition-group>
+                    <div v-if="filteredComments.length === 0" class="empty-state">
+                        <i class="bi bi-chat-square-dots" style="font-size: 2rem; opacity: 0.3;"></i>
+                        <p class="mt-2">暂无评论，快来抢沙发~</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="layout-sidebar">
+            <div class="sidebar-card dir-card">
+                <div class="p-3 border-bottom fw-bold text-main">
+                    案例目录 <span class="badge bg-light text-secondary border ms-2">共 {{ chapters.count }} 节</span>
+                </div>
+                <div class="dir-scroll-box custom-scrollbar">
+                    {% for chapter in chapters %}
+                        <a href="{% url 'case_chapter' case.id chapter.id %}" class="chapter-item {% if current_chapter.id == chapter.id %}active{% endif %}">
+                            <div class="me-3 opacity-50 fw-bold">{{ forloop.counter|stringformat:"02d" }}</div>
+                            <div class="text-truncate">{{ chapter.title }}</div>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div id="note-app" class="w-100">
+                <div class="sidebar-card">
+                    <div class="note-header">随手笔记</div>
+                    <div class="p-3 bg-white border-bottom">
+                        {% if user.is_authenticated %}
+                            <textarea class="form-control border-0 shadow-sm mb-2" rows="4" v-model="newContent" placeholder="记录..." style="border-radius: 8px;background:var(--bg-input);"></textarea>
+                            <button class="btn btn-success w-100 rounded-pill shadow-sm fw-bold mt-2" @click="submitNote" :disabled="isSubmitting || !newContent.trim()">保存笔记</button>
+                        {% endif %}
+                    </div>
+                    <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                        <div v-if="!isMounted" class="p-3"><div class="skeleton-box mb-2" style="height:60px;width:100%;"></div></div>
+                        <template v-else>
+                            <div v-cloak>
+                                <div class="list-group-item p-3 border-bottom-0 border-top" v-for="note in notes" :key="note.id" style="border-color: var(--border-color);">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <small class="text-secondary">[[ note.created_at ]]</small>
+                                        <a href="#" @click.prevent="deleteNote(note.id)" class="text-danger opacity-50"><i class="bi bi-trash"></i></a>
+                                    </div>
+                                    <p class="mb-0 text-secondary small text-break">[[ note.content ]]</p>
+                                </div>
+                                <div v-if="notes.length === 0" class="text-center py-4 text-secondary small opacity-50">暂无笔记</div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="https://cdn.bootcdn.net/ajax/libs/axios/1.3.6/axios.min.js"></script>
+
+<script>
+    /**
+     * =========================================================================
+     * [Part A] 交互逻辑控制层 (Logic Layer)
+     * =========================================================================
+     */
+    let currentFontSize = 16;
+    let isBold = false;
+    let isFavorited = {{ is_favorited|yesno:"true,false" }};
+
+    function adjustFontSize(delta) {
+        currentFontSize = Math.max(14, Math.min(28, currentFontSize + delta));
+        document.documentElement.style.setProperty('--doc-font-size', currentFontSize + 'px');
+        document.documentElement.style.setProperty('--doc-line-height', 1.6 + (currentFontSize - 16) * 0.02);
+    }
+
+    function toggleBold() {
+        isBold = !isBold;
+        const article = document.querySelector('.markdown-body');
+        if (article) article.style.fontWeight = isBold ? '600' : '400';
+    }
+
+    function toggleWideMode() {
+        document.body.classList.toggle('wide-active');
+        const btn = document.getElementById('immersionToggleText');
+        if (btn) {
+            const isActive = document.body.classList.contains('wide-active');
+            btn.innerText = isActive ? '退出沉浸' : '沉浸阅读';
+            btn.style.color = isActive ? 'var(--color-brand)' : '';
+        }
+    }
+
+    function scrollToTop() {
+        const viewer = document.querySelector('.doc-viewer');
+        if (viewer) viewer.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function toggleFavorite() {
+        try {
+            const res = await api.post('/api/toggle-favorite/{{ case.id }}/', {});
+            if (res.status === 'success') {
+                isFavorited = (res.action === 'added');
+                const btn = document.getElementById('floatFavBtn');
+                const icon = btn.querySelector('i');
+                if (isFavorited) {
+                    btn.classList.add('active-fav'); icon.classList.remove('bi-star'); icon.classList.add('bi-star-fill');
+                } else {
+                    btn.classList.remove('active-fav'); icon.classList.remove('bi-star-fill'); icon.classList.add('bi-star');
+                }
+            }
+        } catch(e) {
+            if(confirm('需登录，前往登录？')) window.location.href = "{% url 'login' %}?next={{ request.path }}";
+        }
+    }
+
+    const api = {
+        post: async (url, data) => {
+            const r = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify(data)
+            });
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            return await r.json();
+        }
+    };
+
+    /**
+     * =========================================================================
+     * [Part B] Vue 应用层
+     * =========================================================================
+     */
+    window.initVueApps = function() {
+        if (typeof Vue === 'undefined') { console.error('Vue failed to load.'); return; }
+        console.log("✅ [System] Vue & Bootstrap Loaded. Initializing Apps...");
+        const currentUserId = {% if user.is_authenticated %}{{ user.id }}{% else %}null{% endif %};
+        const currentChapterId = {% if current_chapter %}{{ current_chapter.id }}{% else %}null{% endif %};
+
+        // --- 1. 评论 App ---
+        if (document.getElementById('comment-app')) {
+            let commentsData = [];
+            try {
+                var raw = "{{ comments_json|escapejs }}";
+                commentsData = raw ? JSON.parse(raw) : [];
+            } catch(e) {}
+
+            new Vue({
+                el: '#comment-app', delimiters: ['[[', ']]'],
+                data: {
+                    comments: commentsData, newContent: '', replyContent: '',
+                    isSubmitting: false, currentUserId: currentUserId, currentChapterId: currentChapterId,
+                    filterMode: 'all', isMounted: false, activeReplyId: null
+                },
+                mounted() {
+                    const loader = document.getElementById('static-loading-placeholder');
+                    if(loader) loader.remove();
+                    this.isMounted = true;
+                    this.comments.forEach(c => {
+                        if(c.isLiked === undefined) this.$set(c, 'isLiked', false);
+                        if(c.likeCount === undefined) this.$set(c, 'likeCount', 0);
+                    });
+                },
+                computed: {
+                    filteredComments() {
+                        if (this.filterMode === 'current' && this.currentChapterId) return this.comments.filter(c => c.chapter_id === this.currentChapterId);
+                        return this.comments;
+                    },
+                    rootComments() {
+                        const rawList = JSON.parse(JSON.stringify(this.filteredComments));
+                        const parse = (d) => { let t = new Date(d).getTime(); if(isNaN(t)) t = new Date(d.replace(' ','T')+'Z').getTime(); return isNaN(t)?0:t; };
+                        const sortedList = rawList.sort((a,b) => { const diff = parse(a.created_at)-parse(b.created_at); return diff!==0?diff:a.id-b.id; });
+
+                        const roots = [];
+                        const userMap = {};
+
+                        sortedList.forEach(c => {
+                            c.children = []; c.isRoot = false; c.rootRef = null;
+                            const match = c.content.match(/^回复\s*@(.+?)\s*[:：]\s*(.*)$/);
+
+                            if(!match) {
+                                c.isRoot=true; roots.push(c);
+                            } else {
+                                const target=match[1]; c.replyToUser=target; c.content=match[2];
+                                const parent=userMap[target];
+
+                                if(parent) {
+                                    if(parent.isRoot){
+                                        parent.children.unshift(c);
+                                        c.rootRef=parent;
+                                    } else if(parent.rootRef){
+                                        parent.rootRef.children.unshift(c);
+                                        c.rootRef=parent.rootRef;
+                                    } else {
+                                        roots.push(c); c.isRoot=true;
+                                    }
+                                } else {
+                                    roots.push(c); c.isRoot=true;
+                                }
+                            }
+                            userMap[c.username]=c;
+                        });
+
+                        roots.sort((a,b)=>parse(b.created_at)-parse(a.created_at));
+                        roots.forEach(r=>{if(r.children)r.children.sort((a,b)=>parse(a.created_at)-parse(b.created_at));});
+                        return roots;
+                    }
+                },
+                methods: {
+                    formatTime(str) {
+                        if(!str)return'';
+                        let d=new Date(str.replace(' ','T')+'Z');
+                        if(isNaN(d)) d=new Date(str);
+                        if(isNaN(d)) return str;
+
+                        const diff=(new Date()-d)/1000;
+                        if(diff<60)return'刚刚';
+                        if(diff<3600)return Math.floor(diff/60)+'分钟前';
+                        if(diff<86400)return Math.floor(diff/3600)+'小时前';
+                        if(diff<259200)return Math.floor(diff/86400)+'天前';
+                        return d.toLocaleString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).replace(/\//g,'-');
+                    },
+                    toggleReplyBox(id) {
+                        this.activeReplyId = this.activeReplyId===id?null:id;
+                        this.replyContent='';
+                        if(this.activeReplyId) this.$nextTick(() => { const i=document.querySelectorAll('.inline-textarea'); if(i.length) i[i.length-1].focus(); });
+                    },
+                    async toggleLike(c) {
+                        if(!this.currentUserId) return alert('请先登录');
+                        const src=this.comments.find(i=>i.id===c.id); if(!src)return;
+                        const oldL=src.isLiked; const oldC=src.likeCount;
+                        src.isLiked=!src.isLiked; src.likeCount+=src.isLiked?1:-1;
+                        try { const res=await api.post(`/api/toggle-comment-like/${c.id}/`,{}); if(res.status!=='success') throw new Error(res.message);
+                        }
+                        catch(e){ src.isLiked=oldL;
+                        src.likeCount=oldC; alert('失败'); }
+                    },
+                    async submitComment(tgt) {
+                        const txt=tgt?this.replyContent:this.newContent;
+                        if(!txt.trim())return;
+                        this.isSubmitting=true;
+                        const content = tgt ? `回复 @${tgt.username} : ${txt}` : txt;
+                        try {
+                            const res=await api.post('/api/post-comment/{{ case.id }}/',{content:content,chapter_id:this.currentChapterId});
+                            if(res.status==='success') {
+                                res.data.isLiked=false;
+                                res.data.likeCount=0; this.comments.push(res.data);
+                                if(tgt){this.replyContent='';this.activeReplyId=null;}else{this.newContent='';}
+                            } else alert(res.message);
+                        } catch(e){ alert('网络错误'); } finally { this.isSubmitting=false; }
+                    },
+                    async deleteComment(id) {
+                        if(!confirm('删除?'))return;
+                        try{ await api.post(`/api/delete-comment/${id}/`,{}); this.comments=this.comments.filter(c=>c.id!==id); }catch(e){alert('失败');}
+                    }
+                }
+            });
+        }
+
+        // --- 2. 笔记 App ---
+        if (document.getElementById('note-app')) {
+            let notesData = [];
+            try{
+                var raw = "{{ notes_json|escapejs }}";
+                notesData = raw ? JSON.parse(raw) : [];
+            }catch(e){}
+
+            new Vue({
+                el:'#note-app', delimiters:['[[',']]'],
+                data:{notes:notesData, newContent:'', isSubmitting:false, isMounted:false},
+                mounted(){this.isMounted=true;},
+                methods:{
+                    async submitNote() {
+                        if (!this.newContent.trim()) return;
+                        this.isSubmitting = true;
+                        try {
+                            // 🌟 打包数据，将当前页面的章节 ID 一并发送给后端
+                            const payload = {
+                                content: this.newContent,
+                                chapter_id: "{{ current_chapter.id|default:'' }}"
+                            };
+                            const res = await api.post('/api/post-note/{{ case.id }}/', payload);
+                            if (res.status === 'success') {
+                                this.notes.unshift(res.data);
+                                this.newContent = '';
+                            } else alert('失败');
+                        } catch (e) {
+                            alert('错误');
+                        } finally {
+                            this.isSubmitting = false;
+                        }
+                    },
+                    async deleteNote(id){ if(confirm('删除?')) try{ await api.post(`/api/delete-note/${id}/`,{}); this.notes=this.notes.filter(n=>n.id!==id); }catch(e){alert('失败');} }
+                }
+            });
+        }
+
+        // =========================================================================
+        // 🌟🌟🌟 新增/修改：3. 视频交互分支 App (解析反馈版) 🌟🌟🌟
+        // =========================================================================
+        if (document.getElementById('interactive-video-app')) {
+            let interactiveData = [];
+            try {
+                // 安全接收由 Views 传来的 JSON 字符串，如果没配置则默认为空数组
+                interactiveData = {{ interactive_config_json|default:"[]"|safe }};
+            } catch(e) {
+                console.error("[System] 视频交互配置解析失败:", e);
+            }
+
+            new Vue({
+                el: '#interactive-video-app',
+                delimiters: ['[[', ']]'],
+                data: {
+                    config: interactiveData,  // 接收配置
+                    triggeredTimes: [],       // 防止一秒内重复弹窗
+                    showOverlay: false,       // 控制整个黑底遮罩状态
+                    showFeedback: false,      // 控制是否显示解析文本
+                    currentFeedback: '',      // 存储当前所选选项的解析文本
+                    currentPoint: {}          // 当前题目与选项
+                },
+                mounted() {
+                    // 初始化完成后，配合上方的 v-show 机制，恢复 Flex 布局
+                    const overlay = this.$el.querySelector('div[v-show]');
+                    if (overlay) overlay.style.display = 'flex';
+                },
+                methods: {
+                    checkTime(e) {
+                        if (this.showOverlay) return; // 正在答题时不再触发
+
+                        let currentTime = Math.floor(e.target.currentTime);
+
+                        // 查找该秒数下是否有未触发的交互配置
+                        let point = this.config.find(p => p.time === currentTime && !this.triggeredTimes.includes(currentTime));
+
+                        if (point) {
+                            this.$refs.courseVideo.pause(); // 暂停视频
+
+                            // 🌟🌟🌟 新增：检测并强制退出全屏 🌟🌟🌟
+                            let isFullScreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+                            if (isFullScreen) {
+                                if (document.exitFullscreen) {
+                                    document.exitFullscreen();
+                                } else if (document.webkitExitFullscreen) {
+                                    document.webkitExitFullscreen();
+                                } else if (document.mozCancelFullScreen) {
+                                    document.mozCancelFullScreen();
+                                } else if (document.msExitFullscreen) {
+                                    document.msExitFullscreen();
+                                }
+                            }
+                            // 🌟🌟🌟 新增结束 🌟🌟🌟
+
+                            this.currentPoint = point;      // 装载选项
+                            this.showFeedback = false;      // 每次弹题前重置解析状态
+                            this.showOverlay = true;        // 弹出面板
+                            this.triggeredTimes.push(currentTime); // 记入小本本
+                        }
+                    },
+                    // 点击选项，展示解析文本
+                    handleChoice(feedbackText) {
+                        this.currentFeedback = feedbackText || "该选项暂无详细解析";
+                        this.showFeedback = true;           // 切换到解析界面
+                    },
+                    // 阅读完解析，点击继续播放
+                    continueVideo() {
+                        this.showOverlay = false;           // 关闭遮罩
+                        this.showFeedback = false;          // 重置状态
+                        this.$refs.courseVideo.play();      // 视频继续播放
+                    }
+                }
+            });
+        }
+    };
+
+    /**
+     * =========================================================================
+     * [Part C] SRE 智能资源加载器
+     * =========================================================================
+     */
+    (function() {
+        const RESOURCES = [
+            {
+                name: 'Vue.js',
+                cdns: [
+                    'https://npm.elemecdn.com/vue@2.7.14/dist/vue.min.js',
+                    'https://lib.baomitu.com/vue/2.7.14/vue.min.js',
+                    'https://cdn.staticfile.org/vue/2.7.14/vue.min.js'
+                ],
+                local: "{% static 'js/vue.min.js' %}",
+                loadingLocal: false
+            }
+        ];
+        let loadedCount = 0;
+        let isAppStarted = false;
+
+        function checkReady() {
+            loadedCount++;
+            if (loadedCount === RESOURCES.length && !isAppStarted) {
+                isAppStarted = true;
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', window.initVueApps);
+                } else {
+                    window.initVueApps();
+                }
+            }
+        }
+
+        function raceLoad(res) {
+            let hasWon = false;
+            let failCount = 0;
+            res.cdns.forEach(url => {
+                const script = document.createElement('script');
+                script.src = url;
+                script.crossOrigin = 'anonymous';
+
+                script.onload = () => {
+                    if (!hasWon) {
+                        hasWon = true;
+                        console.log(`🚀 [SRE] ${res.name} Won by: ${url}`);
+                        checkReady();
+                    }
+                };
+
+                script.onerror = () => {
+                    failCount++;
+                    if (failCount === res.cdns.length && !hasWon) {
+                        console.warn(`⚠️ [SRE] All CDNs failed for ${res.name}, switching to Local...`);
+                        loadLocal(res);
+                    }
+                };
+                document.head.appendChild(script);
+            });
+
+            setTimeout(() => {
+                if (!hasWon) {
+                    console.warn(`⏱️ [SRE] Global Timeout (0.85s) for ${res.name}, forcing Local...`);
+                    loadLocal(res);
+                }
+            }, 850);
+        }
+
+        function loadLocal(res) {
+            if (res.loadingLocal) return;
+            res.loadingLocal = true;
+
+            const localScript = document.createElement('script');
+            localScript.src = res.local;
+            localScript.onload = () => {
+                console.log(`✅ [SRE] ${res.name} Local Loaded`);
+                checkReady();
+            };
+            localScript.onerror = () => console.error(`❌ [FATAL] Local file not found: ${res.local}`);
+            document.body.appendChild(localScript);
+        }
+
+        RESOURCES.forEach(raceLoad);
+    })();
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 1. 获取基础参数
+        const caseId = "{{ case.id }}";
+        const csrfToken = "{{ csrf_token }}";
+        const intervalTime = 10;
+        const chapterId = "{{ current_chapter.id|default:'' }}";
+
+        function sendHeartbeat() {
+            if (document.hidden) return;
+
+            axios.post('/api/update-duration/', {
+                case_id: caseId,
+                duration: intervalTime,
+                chapter_id: chapterId
+            }, {
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => {
+                console.log('✅ 进度同步成功: +10秒 | 当前章节ID:', chapterId);
+            }).catch(error => {
+                console.error('❌ 记录失败:', error);
+            });
+        }
+
+        setInterval(sendHeartbeat, intervalTime * 1000);
+        console.log("🚀 学情监测已启动...");
+
+        if (window.initAIAssistant) {
+            window.initAIAssistant("{{ case.id }}");
+        }
+    });
+</script>
+
+{% include 'student_web/components/ai_widget.html' %}
+
+{% endblock %}

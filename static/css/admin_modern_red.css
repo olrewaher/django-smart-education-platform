@@ -1,0 +1,171 @@
+/* ==========================================================================
+   Admin Modern Red - 教师端现代化红色主题 (V5.0 顶层重构版)
+   目标：渐变红顶栏 + 白色侧边栏 + 极简标签页
+   ========================================================================== */
+
+:root {
+    --brand-red: #d93025;        /* 谷歌红 */
+    --brand-red-gradient: linear-gradient(135deg, #d93025 0%, #b71c1c 100%); /* 高级渐变 */
+    --brand-red-hover: #b3261e;
+    --bg-gray: #f4f7f6;          /* 更护眼的灰 */
+    --text-dark: #2c3e50;
+}
+
+/* 1. 全局背景 */
+body, #app {
+    background-color: var(--bg-gray) !important;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+/* ==================== 🔥 顶部导航栏 (Header) 美化 🔥 ==================== */
+.el-header {
+    background: var(--brand-red-gradient) !important; /* 渐变红 */
+    color: #fff !important;
+    box-shadow: 0 4px 20px rgba(183, 28, 28, 0.3) !important; /* 红色光晕投影 */
+    height: 60px !important;
+    line-height: 60px !important;
+    z-index: 2000 !important; /* 保证投影压在侧边栏上 */
+    padding: 0 30px !important;
+}
+
+/* Logo 区域 */
+.simpleui-logo {
+    background: transparent !important;
+    border-bottom: none !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.simpleui-logo img {
+    margin-right: 10px;
+    filter: brightness(100); /* 强制图标变白 */
+}
+
+/* 右侧图标/文字 */
+.el-header .el-dropdown, .el-header i {
+    color: rgba(255,255,255,0.95) !important;
+    transition: opacity 0.3s;
+}
+.el-header .el-dropdown:hover, .el-header i:hover {
+    opacity: 0.8;
+}
+
+/* ==================== 🔥 侧边栏 (Sidebar) 现代化：白底红胶囊 🔥 ==================== */
+/* 强制侧边栏变白 */
+.el-aside, .el-menu {
+    background-color: #fff !important;
+    border-right: none !important;
+}
+
+/* 菜单项基础样式 */
+.el-menu-item, .el-submenu__title {
+    color: #555 !important;
+    height: 50px !important;
+    line-height: 50px !important;
+    margin: 4px 10px !important; /* 留出边距给胶囊 */
+    border-radius: 8px !important; /* 小圆角 */
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+}
+.el-menu-item i, .el-submenu__title i {
+    color: #888 !important;
+}
+
+/* 选中状态：红色胶囊 */
+.el-menu-item.is-active {
+    background-color: #fff0f0 !important; /* 极淡红背景 */
+    color: var(--brand-red) !important;
+    font-weight: 700 !important;
+    box-shadow: 2px 2px 8px rgba(217, 48, 37, 0.1) !important;
+}
+/* 左侧红色指示条 */
+.el-menu-item.is-active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 10px;
+    bottom: 10px;
+    width: 4px;
+    background: var(--brand-red);
+    border-radius: 0 4px 4px 0;
+}
+
+/* 悬停状态 */
+.el-menu-item:hover, .el-submenu__title:hover {
+    background-color: #f8f9fa !important;
+    color: #000 !important;
+}
+
+/* ==================== 🔥 标签页栏 (Tabs) 极简风 🔥 ==================== */
+/* 整个标签栏容器 */
+.el-tabs__header {
+    background-color: #fff !important;
+    margin: 0 0 20px 0 !important;
+    padding: 10px 20px 0 20px !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.02) !important; /* 极淡阴影 */
+}
+
+/* 单个标签卡 */
+.el-tabs__item {
+    height: 40px !important;
+    line-height: 40px !important;
+    border: none !important; /* 去掉边框 */
+    color: #666 !important;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+/* 选中标签 */
+.el-tabs__item.is-active {
+    color: var(--brand-red) !important;
+    font-weight: 700 !important;
+    background: transparent !important;
+}
+/* 底部红色游标 */
+.el-tabs__active-bar {
+    background-color: var(--brand-red) !important;
+    height: 3px !important;
+    border-radius: 3px;
+}
+
+/* ==================== 🔥 内容区 & 卡片 🔥 ==================== */
+/* 首页快捷卡片 */
+.el-card, .box-card, .info-card {
+    border: none !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03) !important;
+    overflow: hidden;
+    transition: transform 0.3s;
+}
+.el-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.06) !important;
+}
+
+/* 按钮胶囊 */
+.el-button {
+    border-radius: 50px !important;
+    font-weight: 600;
+    border: none !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+.el-button--primary {
+    background: var(--brand-red-gradient) !important;
+    box-shadow: 0 4px 12px rgba(217, 48, 37, 0.3) !important;
+}
+.el-button--primary:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+/* 输入框 */
+.el-input__inner {
+    border-radius: 50px !important;
+    border: 1px solid #eee !important;
+    background-color: #f9f9f9 !important;
+    padding-left: 20px !important;
+}
+.el-input__inner:focus {
+    background-color: #fff !important;
+    border-color: var(--brand-red) !important;
+    box-shadow: 0 0 0 3px rgba(217, 48, 37, 0.1) !important;
+}

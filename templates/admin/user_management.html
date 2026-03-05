@@ -1,0 +1,311 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>用户与角色管理</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <link rel="stylesheet" href="{% static 'css/admin_modern_red.css' %}?v=10.0">
+
+    <style>
+        /* 页面私有微调 */
+        body { margin: 0; padding: 0; background-color: #f4f6f9; }
+        .app-container { padding: 30px; max-width: 1600px; margin: 0 auto; }
+
+        /* 顶部搜索栏 */
+        .filter-container {
+            margin-bottom: 30px;
+            background: #fff;
+            padding: 24px;
+            border-radius: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        }
+
+        /* 角色卡片 */
+        .role-card {
+            height: calc(100vh - 180px);
+            display: flex;
+            flex-direction: column;
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        }
+
+        .role-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+            font-weight: 700;
+            color: #202124;
+            padding: 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .user-cell { display: flex; align-items: center; }
+        .user-info { margin-left: 15px; display: flex; flex-direction: column; justify-content: center; }
+        .user-name { font-weight: 600; font-size: 15px; color: #3c4043; margin-bottom: 4px; }
+        .user-id { font-size: 13px; color: #9aa0a6; }
+
+        /* 状态胶囊 */
+        .status-badge { padding: 6px 14px; border-radius: 50px; font-size: 12px; font-weight: 600; }
+        .status-active { background-color: #e6f4ea; color: #1e8e3e; }
+        .status-banned { background-color: #fce8e6; color: #d93025; }
+
+        [v-cloak] { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="app" v-cloak>
+    <div class="app-container">
+
+        <div class="filter-container">
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <el-input
+                    v-model="keyword"
+                    placeholder="搜索姓名 / 工号 / 邮箱..."
+                    prefix-icon="el-icon-search"
+                    style="width: 320px;"
+                    clearable
+                    @clear="fetchData"
+                    @keyup.enter.native="fetchData">
+                </el-input>
+                <el-button type="primary" icon="el-icon-search" @click="fetchData">查询</el-button>
+            </div>
+            <el-button type="primary" icon="el-icon-plus" @click="openAddDialog" :disabled="currentUserLevel < 10">新增用户</el-button>
+        </div>
+
+        <el-row :gutter="30">
+            <el-col :span="isSuperUser ? 12 : 24">
+                <el-card shadow="never" class="role-card" :body-style="{ padding: '0', flex: '1', overflow: 'hidden' }">
+                    <div slot="header" class="role-header">
+                        <div style="display: flex; align-items: center;">
+                            <div style="width: 5px; height: 20px; background: #1976d2; margin-right: 12px; border-radius: 4px;"></div>
+                            <span>学生 / Student</span>
+                        </div>
+                        <el-tag class="tag-student">[[ studentList.length ]] 人</el-tag>
+                    </div>
+                    <user-table
+                        :data-list="studentList"
+                        :loading="loading"
+                        role-color="#1976d2"
+                        @handle-edit="openEditDialog"
+                        @handle-ban="openBanDialog"
+                        @handle-unlock="handleUnlock">
+                    </user-table>
+                </el-card>
+            </el-col>
+
+            <el-col :span="12" v-if="isSuperUser">
+                <el-card shadow="never" class="role-card" :body-style="{ padding: '0', flex: '1', overflow: 'hidden' }">
+                    <div slot="header" class="role-header">
+                        <div style="display: flex; align-items: center;">
+                            <div style="width: 5px; height: 20px; background: #d93025; margin-right: 12px; border-radius: 4px;"></div>
+                            <span>管理团队 / Staff</span>
+                        </div>
+                        <el-tag class="tag-teacher">[[ staffList.length ]] 人</el-tag>
+                    </div>
+                    <user-table
+                        :data-list="staffList"
+                        :loading="loading"
+                        role-color="#d93025"
+                        @handle-edit="openEditDialog"
+                        @handle-ban="openBanDialog"
+                        @handle-unlock="handleUnlock">
+                    </user-table>
+                </el-card>
+            </el-col>
+        </el-row>
+
+        <el-dialog title="新增用户" :visible.sync="addVisible" width="480px" :close-on-click-modal="false">
+            <el-form :model="addForm" label-width="85px" style="padding-right: 10px;">
+                <el-form-item label="用户身份" required>
+                    <el-radio-group v-model="addForm.role">
+                        <el-radio v-if="currentUserLevel >= 100" label="admin" border>普通管理员</el-radio>
+                        <el-radio v-if="currentUserLevel >= 50" label="teacher" border>教师</el-radio>
+                        <el-radio label="student" border>学生</el-radio>
+                    </el-radio-group>
+                    <div style="font-size: 12px; color: #666; margin-top: 15px; padding: 12px; background: #f9f9f9; border-radius: 12px;">
+                        <div v-if="addForm.role==='admin'"><i class="el-icon-s-custom" style="color:#9c27b0"></i> <b style="color:#9c27b0">普通管理员：</b>可管理教师和学生。</div>
+                        <div v-else-if="addForm.role==='teacher'"><i class="el-icon-user-solid" style="color:#d93025"></i> <b style="color:#d93025">教师：</b>仅可管理学生数据。</div>
+                        <div v-else><i class="el-icon-user"></i> <b>学生：</b>仅限前台学习。</div>
+                    </div>
+                </el-form-item>
+                <el-form-item label="登录账号" required><el-input v-model="addForm.username" placeholder="请输入用户名"></el-input></el-form-item>
+                <el-form-item label="登录密码" required><el-input v-model="addForm.password" placeholder="请输入密码" show-password></el-input></el-form-item>
+                <el-form-item label="姓名/工号"><el-input v-model="addForm.realName" placeholder="例如: 张三 / 2021001"></el-input></el-form-item>
+                <el-form-item label="电子邮箱"><el-input v-model="addForm.email" placeholder="选填"></el-input></el-form-item>
+            </el-form>
+            <div slot="footer"><el-button @click="addVisible = false">取消</el-button><el-button type="primary" :loading="btnLoading" @click="submitAdd">立即创建</el-button></div>
+        </el-dialog>
+
+        <el-dialog :title="'封禁: ' + tempUser.username" :visible.sync="dialogVisible" width="420px">
+            <el-form :model="form" label-width="80px">
+                <el-form-item label="类型"><el-radio-group v-model="form.type"><el-radio label="temp" border>临时</el-radio><el-radio label="perm" border>永久</el-radio></el-radio-group></el-form-item>
+                <el-form-item label="时间" v-if="form.type==='temp'"><el-date-picker v-model="form.endTime" type="datetime" style="width:100%" value-format="yyyy-MM-dd HH:mm:ss"></el-date-picker></el-form-item>
+                <el-form-item label="理由"><el-input type="textarea" v-model="form.reason"></el-input></el-form-item>
+            </el-form>
+            <div slot="footer"><el-button @click="dialogVisible=false">取消</el-button><el-button type="danger" @click="submitBan" :loading="btnLoading">确认封禁</el-button></div>
+        </el-dialog>
+
+        <el-dialog :title="'编辑: ' + editForm.username" :visible.sync="editVisible" width="420px">
+            <el-form :model="editForm" label-width="80px">
+                <el-form-item label="用户名"><el-input v-model="editForm.username" disabled></el-input></el-form-item>
+
+                <el-form-item label="用户身份" v-if="currentUserLevel >= 50">
+                    <el-radio-group v-model="editForm.role">
+                        <el-radio v-if="currentUserLevel >= 100" label="admin" border size="small">管理员</el-radio>
+                        <el-radio v-if="currentUserLevel >= 50" label="teacher" border size="small">教师</el-radio>
+                        <el-radio label="student" border size="small">学生</el-radio>
+                    </el-radio-group>
+                </el-form-item>
+
+                <el-form-item label="工号"><el-input v-model="editForm.realName"></el-input></el-form-item>
+                <el-form-item label="邮箱"><el-input v-model="editForm.email"></el-input></el-form-item>
+                <el-form-item label="密码"><el-input v-model="editForm.password" placeholder="不改留空" show-password></el-input></el-form-item>
+            </el-form>
+            <div slot="footer"><el-button @click="editVisible=false">取消</el-button><el-button type="primary" @click="submitEdit" :loading="btnLoading">保存</el-button></div>
+        </el-dialog>
+    </div>
+</div>
+
+<script src="https://unpkg.com/vue@2.6.14/dist/vue.js"></script>
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+<script>
+    const IS_SUPERUSER = {{ is_superuser_flag|yesno:"true,false" }};
+
+    axios.defaults.headers.common['X-CSRFToken'] = '{{ csrf_token }}';
+
+    const UserTable = {
+        props: ['dataList', 'loading', 'roleColor'],
+        template: `
+        <el-table :data="dataList" v-loading="loading" height="100%" stripe style="width: 100%">
+            <el-table-column label="用户" min-width="160">
+                <template slot-scope="{row}">
+                    <div class="user-cell">
+                        <el-avatar size="medium" :style="{
+                            backgroundColor: row.role==='superuser' ? '#f57c00' : (row.role==='admin' ? '#9c27b0' : roleColor),
+                            color: '#fff',
+                            fontWeight: 'bold',
+                            boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+                        }">
+                            [[ row.username[0].toUpperCase() ]]
+                        </el-avatar>
+                        <div class="user-info">
+                            <span class="user-name">
+                                [[ row.username ]]
+                                <el-tag v-if="row.role==='superuser'" size="mini" class="tag-superuser" style="margin-left:5px;">超管</el-tag>
+                                <el-tag v-else-if="row.role==='admin'" size="mini" class="tag-admin" style="margin-left:5px;">管理员</el-tag>
+                                <el-tag v-else-if="row.role==='teacher'" size="mini" class="tag-teacher" style="margin-left:5px;">教师</el-tag>
+                            </span>
+                            <span class="user-id">[[ row.realName ]]</span>
+                        </div>
+                    </div>
+                </template>
+            </el-table-column>
+
+            <el-table-column label="状态" width="100" align="center">
+                <template slot-scope="{row}">
+                    <div v-if="row.status === 'active'" class="status-badge status-active">正常</div>
+                    <el-popover v-else trigger="hover" placement="top"><p>理由: [[ row.banReason ]]</p><div slot="reference" class="status-badge status-banned">封禁</div></el-popover>
+                </template>
+            </el-table-column>
+
+            <el-table-column label="操作" width="150" align="center">
+                <template slot-scope="{row}">
+                    <div v-if="!row.canEdit" style="color:#adb5bd; font-size:12px;">无权操作</div>
+                    <div v-else>
+                        <el-button type="text" size="mini" @click="$emit('handle-edit', row)">编辑</el-button>
+                        <el-divider direction="vertical"></el-divider>
+                        <el-button v-if="row.status === 'active'" type="text" style="color: #dc3545" @click="$emit('handle-ban', row)">封禁</el-button>
+                        <el-button v-else type="text" style="color: #198754" @click="$emit('handle-unlock', row)">解封</el-button>
+                    </div>
+                </template>
+            </el-table-column>
+        </el-table>
+        `,
+        delimiters: ['[[', ']]']
+    };
+
+    new Vue({
+        el: '#app',
+        delimiters: ['[[', ']]'],
+        components: { UserTable },
+        data: {
+            isSuperUser: IS_SUPERUSER,
+
+            keyword: '', fullList: [], studentList: [], staffList: [], loading: false, btnLoading: false,
+            addVisible: false, editVisible: false, dialogVisible: false,
+            tempUser: {}, currentUserLevel: 0,
+            addForm: { username: '', password: '', role: 'student', realName: '', email: '' },
+
+            // 【修改点 2】：在 editForm 里面加上了 role 字段
+            editForm: { userId: '', username: '', realName: '', email: '', password: '', role: '' },
+
+            form: { type: 'temp', endTime: '', reason: '' },
+            pickerOptions: { disabledDate(time) { return time.getTime() < Date.now(); } },
+        },
+        mounted() { this.fetchData(); },
+        methods: {
+            fetchData() {
+                this.loading = true;
+                axios.get('/teacher/api/user-list/', { params: { keyword: this.keyword } })
+                    .then(res => {
+                        this.fullList = res.data.data;
+                        this.currentUserLevel = res.data.meta.currentUserLevel;
+                        this.studentList = this.fullList.filter(u => u.role === 'student');
+                        this.staffList = this.fullList.filter(u => ['superuser', 'admin', 'teacher'].includes(u.role));
+                    }).finally(() => this.loading = false);
+            },
+            openAddDialog() { this.addForm = { username: '', password: '', role: 'student', realName: '', email: '' }; this.addVisible = true; },
+            submitAdd() {
+                if(!this.addForm.username || !this.addForm.password) return this.$message.warning('必填项为空');
+                this.btnLoading = true;
+                axios.post('/teacher/api/user-add/', this.addForm).then(res => {
+                    if (res.data.code === 200) { this.$message.success('创建成功'); this.addVisible = false; this.fetchData(); }
+                    else { this.$message.error(res.data.msg); }
+                }).finally(() => this.btnLoading = false);
+            },
+            openEditDialog(row) {
+                this.editForm = {
+                    userId: row.id,
+                    username: row.username,
+                    realName: row.realName,
+                    email: row.email,
+                    password: '',
+                    // 【修改点 3】：确保打开编辑弹窗时，会自动选中他原本的身份
+                    role: row.role
+                };
+                this.editVisible = true;
+            },
+            submitEdit() {
+                this.btnLoading = true;
+                axios.post('/teacher/api/user-edit/', this.editForm).then(res => {
+                    if (res.data.code === 200) { this.$message.success('修改成功'); this.editVisible = false; this.fetchData(); }
+                    else { this.$message.error(res.data.msg); }
+                }).finally(() => this.btnLoading = false);
+            },
+            openBanDialog(row) { this.tempUser = row; this.form = { type: 'temp', endTime: '', reason: '' }; this.dialogVisible = true; },
+            submitBan() {
+                this.btnLoading = true;
+                axios.post('/teacher/api/user-action/', { userId: this.tempUser.id, action: 'ban', banType: this.form.type, endTime: this.form.endTime, reason: this.form.reason })
+                .then(res => { if (res.data.code === 200) { this.$message.success('封禁成功'); this.dialogVisible = false; this.fetchData(); } else { this.$message.error(res.data.msg); } })
+                .finally(() => this.btnLoading = false);
+            },
+            handleUnlock(row) {
+                this.$confirm(`解封 ${row.username}?`).then(() => {
+                    axios.post('/teacher/api/user-action/', { userId: row.id, action: 'unlock' })
+                    .then(res => { if (res.data.code === 200) { this.$message.success('已解封'); this.fetchData(); } });
+                });
+            }
+        }
+    });
+</script>
+</body>
+</html>

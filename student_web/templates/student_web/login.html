@@ -1,0 +1,221 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学习端登录 - 思政案例教学资源库</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.2.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap-icons/1.10.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    {% if form.saas_token %}
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    {% endif %}
+
+    <style>
+        /* ========== 🔵 学生端蓝色主题配置 ========== */
+        :root {
+            --theme-color-primary: #0d6efd;
+            --theme-color-hover: #0b5ed7;
+            --theme-bg-gradient-start: #eef2f7;
+            --theme-bg-gradient-end: #c3cfe2;
+        }
+
+        body {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: linear-gradient(135deg, var(--theme-bg-gradient-start) 0%, var(--theme-bg-gradient-end) 100%);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            border: none;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.95);
+        }
+        .card-header {
+            background-color: var(--theme-color-primary);
+            color: white;
+            text-align: center;
+            padding: 2.5rem 1rem 2rem;
+            border: none;
+            position: relative;
+        }
+        .header-icon-large {
+            font-size: 4rem;
+            opacity: 0.2;
+            position: absolute;
+            top: 5px;
+            right: 15px;
+            transform: rotate(-15deg);
+        }
+        .card-body { padding: 2.5rem; }
+
+        /* 保持原有的输入框样式 (Bootstrap 标准风格) */
+        .form-control, .input-group-text { padding: 0.8rem 1rem; border-radius: 10px; border-color: #dee2e6; }
+        .input-group-text { background-color: #f8f9fa; color: var(--theme-color-primary); }
+        .form-control:focus { box-shadow: none; border-color: var(--theme-color-primary); }
+
+        /* 🔥🔥🔥 仅针对验证码区域的定制样式 (简洁版) 🔥🔥🔥 */
+        .captcha-box {
+            border: 1px solid #dee2e6; /* 与上面的输入框边框颜色一致 */
+            border-radius: 10px;       /* 圆角也一致 */
+            padding: 4px;              /* 内部留一点点空隙 */
+            background-color: #fff;
+            display: flex;             /* 弹性布局：左边输入框，右边图片 */
+            align-items: center;
+            transition: border-color 0.15s ease-in-out;
+        }
+        /* 当输入框聚焦时，外框变蓝 (模拟 Bootstrap 聚焦效果) */
+        .captcha-box:focus-within {
+            border-color: var(--theme-color-primary);
+        }
+
+        .btn-theme {
+            background-color: var(--theme-color-primary);
+            border: none;
+            padding: 0.8rem;
+            font-size: 1.1rem;
+            border-radius: 10px;
+            width: 100%;
+            margin-top: 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-theme:hover { background-color: var(--theme-color-hover); transform: translateY(-2px); }
+
+        .register-link { color: var(--theme-color-primary); font-weight: bold; text-decoration: none; }
+        .register-link:hover { text-decoration: underline; }
+        .forgot-link { color: #6c757d; text-decoration: none; font-size: 0.9em; transition: color 0.2s; }
+        .forgot-link:hover { color: var(--theme-color-primary); }
+    </style>
+</head>
+<body>
+
+    <div class="card login-card animate__animated animate__fadeIn">
+        <div class="card-header">
+            <i class="bi bi-mortarboard-fill header-icon-large"></i>
+            <h3 class="mb-1 fw-bold"><i class="bi bi-person-circle me-2"></i>学生登录</h3>
+            <p class="mb-0 opacity-75 small">欢迎回到思政案例学习平台</p>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+
+                {% if form.errors %}
+                    <div class="alert alert-danger py-2 small rounded-3 text-center mb-4 border-0" style="background-color: rgba(220, 53, 69, 0.1); color: #dc3545;">
+                        <i class="bi bi-exclamation-circle-fill me-1"></i> 用户名或密码错误
+                    </div>
+                {% endif %}
+
+                <div class="mb-4">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                        <input type="text" name="username" class="form-control" placeholder="请输入学号" required autofocus>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-shield-lock-fill"></i></span>
+                        <input type="password" name="password" class="form-control" placeholder="请输入密码" required>
+                    </div>
+                </div>
+
+                <div class="mb-4 d-flex flex-column w-100">
+
+                    {% if form.saas_token %}
+                        <div class="d-flex justify-content-center">
+                            <div class="cf-turnstile"
+                                 data-sitekey="{{ form.saas_token.field.widget.attrs.data_sitekey|default:'0x4AAAAAACZ7qGg_vEWtGpp-' }}"
+                                 data-response-field-name="saas_token">
+                            </div>
+                        </div>
+                        {{ form.saas_token.errors }}
+
+                    {% elif form.local_captcha %}
+                        <div class="captcha-box">
+                            {{ form.local_captcha }}
+                        </div>
+
+                        <div class="text-muted small mt-2 text-center" style="font-size: 12px;">
+                            <i class="bi bi-arrow-repeat"></i> 点击图片刷新
+                        </div>
+                        <div class="text-danger small mt-1 text-center">{{ form.local_captcha.errors }}</div>
+                    {% endif %}
+
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-theme">
+                    立即进入 <i class="bi bi-arrow-right-circle-fill ms-2"></i>
+                </button>
+
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <a href="{% url 'admin_password_reset' %}" class="forgot-link">
+                        <i class="bi bi-question-circle"></i> 忘记密码?
+                    </a>
+                    <small class="text-muted">
+                        还没有账号？ <a href="{% url 'register' %}" class="register-link">立即注册</a>
+                    </small>
+                </div>
+            </form>
+        </div>
+
+        <div class="card-footer text-center bg-transparent border-0 pb-4 pt-0">
+            <hr class="text-muted opacity-25 mb-3">
+            <div class="d-grid gap-2 col-9 mx-auto">
+                <a href="/admin/" class="btn btn-outline-primary btn-sm rounded-pill py-2 border-0" style="background: rgba(13, 110, 253, 0.1);">
+                    <i class="bi bi-person-badge me-1"></i> 我是教师？切换到教师端
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if form.local_captcha %}
+        <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script>
+            $(document).ready(function () {
+                var $captchaImg = $('img.captcha');
+                var $hiddenInput = $('#id_local_captcha_0');
+                var $textInput = $('#id_local_captcha_1');
+
+                // 1. 图片样式：右对齐，圆角
+                $captchaImg.attr('title', '点击刷新').css({
+                    'cursor': 'pointer',
+                    'height': '40px',          // 高度适配输入框
+                    'border-radius': '8px',
+                    'border': '1px solid #eee',
+                    'margin-left': '8px'       // 图片离输入框一点距离
+                });
+
+                // 2. 输入框样式：去掉默认边框，让它看起来融入父容器
+                $textInput.addClass('form-control border-0 bg-transparent')
+                    .attr('placeholder', '请输入图中字符')
+                    .css({
+                        'box-shadow': 'none', // 去掉聚焦时的蓝框，由父容器接管
+                        'width': '100%',
+                        'padding-left': '10px'
+                    });
+
+                // 3. DOM调整：把图片移动到输入框后面
+                // 最终效果： [ 输入框 ............. 图片 ]
+                $textInput.parent().append($captchaImg);
+
+                // 4. 点击刷新
+                $captchaImg.click(function () {
+                    $.getJSON("/captcha/refresh/", function (json) {
+                        $captchaImg.attr('src', json.image_url);
+                        $hiddenInput.val(json.key);
+                    });
+                });
+            });
+        </script>
+    {% endif %}
+
+</body>
+</html>

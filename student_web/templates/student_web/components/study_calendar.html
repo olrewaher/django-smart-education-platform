@@ -1,0 +1,121 @@
+<style>
+    /* 日历方块基础样式 */
+    .cal-day {
+        position: relative; /* 🌟 必须加这个，为了让小勾能绝对定位在右下角 */
+        aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center;
+        border-radius: 8px; font-size: 0.85rem; background-color: #f8f9fa;
+        color: #6c757d; font-weight: 500; transition: all 0.2s ease;
+    }
+
+    /* 🌟 修改：签到达标的样式 (清新的浅绿底色) */
+    .cal-day.checked-in {
+        background-color: #f0fdf4; /* 极淡的护眼绿 */
+        color: #15803d;            /* 沉稳的深绿文字 */
+        border: 1px solid #bbf7d0; /* 淡淡的绿边框 */
+        font-weight: bold;
+    }
+
+    /* 今天的特殊标记 */
+    .cal-day.is-today { border: 2px solid #00aeec; color: #00aeec; font-weight: bold; }
+    .cal-day.checked-in.is-today { border: 2px solid #00aeec; }
+
+    /* 🌟 新增：右下角绿色小勾的样式 */
+    .cal-day .check-icon {
+        position: absolute;
+        bottom: 2px;
+        right: 4px;
+        color: #22c55e; /* 清爽的亮绿色 */
+        font-size: 0.65rem;
+    }
+</style>
+
+<div class="card shadow-sm border-0 mt-3">
+    <div class="card-body px-3 py-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0 text-dark">
+                <i class="bi bi-calendar-check-fill text-success me-2"></i>学习打卡
+            </h6>
+            <div class="d-flex align-items-center bg-light rounded-pill px-2 py-1">
+                <button class="btn btn-sm btn-link text-muted p-0 text-decoration-none" onclick="changeMonth(-1)" title="上个月">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <span id="calendarTitle" class="mx-3 fw-bold text-dark" style="font-size: 0.9rem; min-width: 65px; text-align: center;">--年-月</span>
+                <button class="btn btn-sm btn-link text-muted p-0 text-decoration-none" onclick="changeMonth(1)" title="下个月">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="text-muted mb-3" style="font-size: 0.75rem;">
+            今日目标：累计学习满 <strong class="text-success">30</strong> 分钟即视为签到
+        </div>
+
+        <div class="d-grid text-center text-secondary fw-bold mb-2" style="grid-template-columns: repeat(7, 1fr); font-size: 0.8rem;">
+            <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+        </div>
+
+        <div id="calendarGrid" class="d-grid text-center" style="grid-template-columns: repeat(7, 1fr); gap: 6px;">
+            </div>
+    </div>
+</div>
+
+<script>
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth() + 1; // 1-12
+    const realToday = new Date();
+
+    document.addEventListener("DOMContentLoaded", function() {
+        renderCalendar(currentYear, currentMonth);
+    });
+
+    function changeMonth(delta) {
+        currentMonth += delta;
+        if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+        else if (currentMonth < 1) { currentMonth = 12; currentYear--; }
+        renderCalendar(currentYear, currentMonth);
+    }
+
+    function renderCalendar(year, month) {
+        document.getElementById('calendarTitle').innerText = `${year}年 ${month}月`;
+        const grid = document.getElementById('calendarGrid');
+        grid.innerHTML = '<div class="col-12 text-muted" style="grid-column: span 7;">加载中...</div>';
+
+        fetch(`/api/study-calendar/?year=${year}&month=${month}`)
+            .then(res => res.json())
+            .then(data => {
+                if(data.status !== 'success') return;
+                drawGrid(year, month, data.checked_in_days || []);
+            })
+            .catch(err => {
+                grid.innerHTML = '<div class="col-12 text-danger" style="grid-column: span 7;">数据加载失败</div>';
+            });
+    }
+
+    function drawGrid(year, month, checkedDays) {
+        const grid = document.getElementById('calendarGrid');
+        grid.innerHTML = '';
+        const firstDayOfWeek = new Date(year, month - 1, 1).getDay();
+        const daysInMonth = new Date(year, month, 0).getDate();
+
+        for (let i = 0; i < firstDayOfWeek; i++) {
+            grid.innerHTML += `<div class="cal-day" style="background:transparent;"></div>`;
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            let className = "cal-day";
+            let contentHtml = `${day}`; // 默认只显示数字
+
+            if (year === realToday.getFullYear() && month === realToday.getMonth() + 1 && day === realToday.getDate()) {
+                className += " is-today";
+            }
+
+            // 🌟 如果达标了，不仅加上背景样式，还在数字后面追加一个小勾图标
+            if (checkedDays.includes(day)) {
+                className += " checked-in";
+                contentHtml += `<i class="bi bi-check-circle-fill check-icon"></i>`;
+            }
+
+            grid.innerHTML += `<div class="${className}">${contentHtml}</div>`;
+        }
+    }
+</script>

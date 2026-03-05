@@ -1,0 +1,81 @@
+/* static/css/admin_capsule.css */
+
+/* 1. 强制全局背景与字体 (统一质感) */
+body {
+    background-color: #f5f7fa !important; /* 统一浅灰背景 */
+    font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+}
+
+/* 2. 核心：胶囊按钮 (Capsule Buttons) */
+.el-button {
+    border-radius: 50px !important; /* 变成圆润的胶囊 */
+    padding: 10px 24px !important;  /* 拉长按钮 */
+    font-weight: 500 !important;
+    border: none !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05) !important; /* 柔和投影 */
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+}
+
+/* 红色主按钮 (保留教师端红色特征，但更现代) */
+.el-button--primary, .el-button--danger, .el-button--success {
+    /* 使用渐变红，比纯色更有质感 */
+    background: linear-gradient(135deg, #d93025 0%, #c1271d 100%) !important;
+    box-shadow: 0 6px 15px rgba(217, 48, 37, 0.25) !important;
+}
+
+/* 按钮悬停效果：上浮 */
+.el-button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12) !important;
+}
+
+/* 次级按钮 (白色) */
+.el-button--default {
+    background-color: #fff !important;
+    border: 1px solid #eee !important;
+    color: #606266 !important;
+}
+
+/* 小按钮也能保持圆润 */
+.el-button--mini, .el-button--small {
+    border-radius: 20px !important;
+    padding: 7px 15px !important;
+}
+
+/* 3. 卡片柔化 (Soft Cards) */
+.role-card, .el-card {
+    border-radius: 16px !important; /* 大圆角 */
+    border: none !important;        /* 去掉黑边框 */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.04) !important; /* 弥散阴影 */
+    background-color: #fff !important;
+    overflow: hidden; /* 确保内容不溢出圆角 */
+}
+
+/* 卡片头部 */
+.role-header, .el-card__header {
+    border-bottom: 1px solid rgba(0,0,0,0.03) !important;
+    padding: 20px 24px !important;
+}
+
+/* 4. 输入框柔化 */
+.el-input__inner {
+    border-radius: 30px !important; /* 圆角输入框 */
+    border: 1px solid #f0f0f0 !important;
+    background-color: #f9f9f9 !important;
+    padding-left: 20px !important;
+    transition: all 0.3s;
+}
+.el-input__inner:focus {
+    background-color: #fff !important;
+    border-color: #d93025 !important; /* 聚焦变红 */
+    box-shadow: 0 0 0 3px rgba(217, 48, 37, 0.1) !important;
+}
+
+/* 5. 标签与头像 */
+.el-tag {
+    border-radius: 12px !important;
+    border: none !important;
+}
+.el-avatar {
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}

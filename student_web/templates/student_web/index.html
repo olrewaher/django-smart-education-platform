@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}首页 - 精选案例库{% endblock %}
+
+{% block content %}
+<input type="hidden" id="page-csrf-token" value="{{ csrf_token }}">
+
+<style>
+    /* =========================================
+       🎨 Apple Style Design System (首页专用)
+       =========================================
+    */
+    :root {
+        --apple-bg: #f5f5f7;
+        --apple-card-bg: #ffffff;
+        --apple-text-main: #1d1d1f;
+        --apple-text-sub: #86868b;
+        --apple-primary: #0071e3;
+        --apple-primary-hover: #0077ed;
+
+        --card-radius: 20px;
+        --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+        --card-hover-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+        --transition-curve: cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    body {
+        background-color: var(--apple-bg);
+        color: var(--apple-text-main);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    }
+
+    .apple-container {
+        max-width: 1280px; margin: 0 auto; padding: 40px 24px;
+    }
+
+    /* 头部区域 */
+    .page-header {
+        margin-bottom: 48px; text-align: center;
+        animation: fadeInDown 0.8s var(--transition-curve);
+    }
+    .page-title {
+        font-size: 40px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 12px;
+        background: linear-gradient(135deg, #1d1d1f 0%, #434344 100%);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .page-subtitle {
+        font-size: 18px; color: var(--apple-text-sub); font-weight: 400; max-width: 600px; margin: 0 auto;
+    }
+
+    /* 网格布局 */
+    .case-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 32px; padding-bottom: 60px;
+    }
+
+    /* 卡片组件 */
+    .apple-card {
+        background: var(--apple-card-bg); border-radius: var(--card-radius);
+        overflow: hidden; position: relative; display: flex; flex-direction: column;
+        text-decoration: none; transition: all 0.4s var(--transition-curve);
+        border: 1px solid rgba(0, 0, 0, 0.02); box-shadow: var(--card-shadow);
+        animation: fadeInUp 0.6s var(--transition-curve) backwards;
+    }
+    .apple-card:hover {
+        transform: translateY(-8px) scale(1.005); box-shadow: var(--card-hover-shadow);
+    }
+
+    /* 封面图 */
+    .card-cover-wrapper {
+        width: 100%; aspect-ratio: 16/9; position: relative; overflow: hidden; background-color: #f0f0f0;
+    }
+    .card-img {
+        width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s var(--transition-curve);
+    }
+    .apple-card:hover .card-img { transform: scale(1.05); }
+
+    .no-cover-gradient {
+        width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 2rem; background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+    }
+    .apple-card:nth-child(3n+1) .no-cover-gradient { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+    .apple-card:nth-child(3n+2) .no-cover-gradient { background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); }
+    .apple-card:nth-child(3n+3) .no-cover-gradient { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+
+    /* 内容区 */
+    .card-body { padding: 24px; flex: 1; display: flex; flex-direction: column; }
+    .card-meta {
+        font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+        color: var(--apple-primary); margin-bottom: 8px;
+    }
+    .card-title {
+        font-size: 20px; font-weight: 700; color: var(--apple-text-main); margin: 0 0 10px 0;
+        line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .card-desc {
+        font-size: 14px; color: var(--apple-text-sub); line-height: 1.6; margin-bottom: 20px;
+        display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; flex-grow: 1;
+    }
+
+    /* 底部栏 */
+    .card-footer {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(0,0,0,0.03);
+    }
+
+    /* 胶囊按钮通用样式 */
+    .btn-capsule {
+        font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 99px;
+        transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px;
+        cursor: pointer; border: none;
+    }
+
+    /* 开始学习按钮 (主色) */
+    .btn-learn {
+        background-color: var(--apple-bg); color: var(--apple-primary);
+    }
+    .apple-card:hover .btn-learn { /* 悬浮卡片时按钮高亮 */
+        background-color: var(--apple-primary); color: #fff;
+        box-shadow: 0 4px 12px rgba(0, 113, 227, 0.3);
+    }
+
+    /* 🔥 收藏按钮 (带文字版) */
+    .btn-fav {
+        background-color: transparent;
+        color: #86868b;
+        border: 1px solid #e1e1e1;
+        padding: 7px 14px; /* 稍微小一点 */
+        z-index: 2; /* 确保在最上层 */
+    }
+    .btn-fav:hover {
+        background-color: #f5f5f7;
+        color: #1d1d1f;
+        border-color: #d1d1d1;
+    }
+
+    /* 收藏激活状态 (黄色) */
+    .btn-fav.active {
+        background-color: #fff8e1; /* 浅黄背景 */
+        color: #f5a623;            /* 深黄文字 */
+        border-color: #f5a623;
+    }
+    .btn-fav.active i {
+        color: #f5a623;
+    }
+
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    .apple-card:nth-child(1) { animation-delay: 0.05s; }
+    .apple-card:nth-child(2) { animation-delay: 0.1s; }
+    .apple-card:nth-child(3) { animation-delay: 0.15s; }
+    .apple-card:nth-child(4) { animation-delay: 0.2s; }
+    .apple-card:nth-child(5) { animation-delay: 0.25s; }
+    .apple-card:nth-child(6) { animation-delay: 0.3s; }
+
+    .empty-state { grid-column: 1 / -1; text-align: center; padding: 80px 0; color: var(--apple-text-sub); }
+    .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+</style>
+
+<div class="apple-container">
+
+    <header class="page-header">
+        <h1 class="page-title">探索课程案例</h1>
+        <p class="page-subtitle">精选计算机与思政融合的优秀教学资源</p>
+    </header>
+
+    <div style="max-width: 1500px; margin: 0 auto 40px auto;">
+        {% include 'student_web/components/search_bar.html' %}
+    </div>
+
+    <div class="case-grid">
+        {% for case in cases %}
+        <a href="{% url 'case_detail' case.id %}" class="apple-card">
+
+            <div class="card-cover-wrapper">
+                {% if case.cover_image %}
+                    <img src="{{ case.cover_image.url }}" alt="{{ case.title }}" class="card-img">
+                {% else %}
+                    <div class="no-cover-gradient">
+                        <i class="bi bi-journal-album"></i>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="card-body">
+                <div class="card-meta">
+                    {{ case.category.name|default:"未分类" }} · {{ case.get_case_type_display|default:"通用" }}
+                </div>
+
+                <h3 class="card-title">{{ case.title }}</h3>
+
+                <p class="card-desc">
+                    {{ case.description|default:"点击进入课程，开启沉浸式学习之旅..." }}
+                </p>
+
+                <div class="card-footer">
+                    <span class="btn-capsule btn-learn">
+                        开始学习 <i class="bi bi-arrow-right"></i>
+                    </span>
+
+                    <div class="btn-capsule btn-fav {% if case.id in fav_case_ids %}active{% endif %}"
+                         onclick="toggleCardFav(event, this, {{ case.id }})"
+                         title="点击收藏">
+                        <i class="bi {% if case.id in fav_case_ids %}bi-star-fill{% else %}bi-star{% endif %}"></i>
+                        <span class="fav-text">{% if case.id in fav_case_ids %}已收藏{% else %}收藏{% endif %}</span>
+                    </div>
+                </div>
+            </div>
+        </a>
+        {% empty %}
+            <div class="empty-state">
+                <div class="empty-icon"><i class="bi bi-box-seam"></i></div>
+                <h3>暂无案例数据</h3>
+                <p>请通知管理员在后台添加相关课程内容。</p>
+            </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<script>
+    async function toggleCardFav(event, btn, caseId) {
+        // ⛔️ 阻止事件冒泡：防止点击收藏时跳进详情页
+        event.preventDefault();
+        event.stopPropagation();
+
+        try {
+            // 直接从页面顶部的隐藏 input 获取 Token，百分百可靠
+            const csrfToken = document.getElementById('page-csrf-token').value;
+
+            // 调用 toggle 接口
+            const response = await fetch(`/api/toggle-favorite/${caseId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({})
+            });
+
+            // 处理未登录 (403/401)
+            if (response.status === 403 || response.status === 401) {
+                if(confirm('收藏需要先登录，是否前往登录？')) {
+                    // 跳转登录页，并带上 ?next=当前页
+                    window.location.href = "{% url 'login' %}?next={{ request.path }}";
+                }
+                return;
+            }
+
+            const res = await response.json();
+            if (res.status === 'success') {
+                // ✅ 成功：切换 UI 状态
+                const icon = btn.querySelector('i');
+                const textSpan = btn.querySelector('.fav-text');
+
+                if (res.action === 'added') {
+                    // 变为已收藏状态
+                    btn.classList.add('active');
+                    icon.classList.remove('bi-star');
+                    icon.classList.add('bi-star-fill');
+                    textSpan.textContent = "已收藏";
+                } else {
+                    // 变为未收藏状态
+                    btn.classList.remove('active');
+                    icon.classList.remove('bi-star-fill');
+                    icon.classList.add('bi-star');
+                    textSpan.textContent = "收藏";
+                }
+            } else {
+                alert('操作失败: ' + res.msg);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('网络请求错误，请检查控制台日志');
+        }
+    }
+</script>
+{% endblock %}

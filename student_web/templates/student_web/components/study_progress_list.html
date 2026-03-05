@@ -1,0 +1,90 @@
+{% load static %}
+
+{% if study_records %}
+    <div class="list-group list-group-flush">
+        {% for record in study_records %}
+        <div class="list-group-item py-3 border-0 border-bottom">
+            <div class="d-flex align-items-start">
+                
+                <div class="flex-shrink-0 me-3 position-relative" style="width: 140px; height: 80px;">
+                    {% if record.case.cover_image %}
+                        <img src="{{ record.case.cover_image.url }}" class="w-100 h-100 rounded object-fit-cover shadow-sm" alt="封面">
+                    {% else %}
+                        <div class="w-100 h-100 bg-light rounded d-flex align-items-center justify-content-center text-muted border shadow-sm">
+                            <i class="bi bi-image fs-4"></i>
+                        </div>
+                    {% endif %}
+                    <span class="position-absolute top-0 start-0 badge bg-primary shadow-sm" style="font-size: 0.7rem; border-radius: 4px 0 4px 0;">
+                        {{ record.case.category.name }}
+                    </span>
+                </div>
+
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <h6 class="mb-0 fw-bold">
+                            <a href="{% url 'case_detail' record.case.id %}" class="text-decoration-none text-dark stretched-link">
+                                {{ record.case.title }}
+                            </a>
+                        </h6>
+                        <small class="text-muted" style="font-size: 0.8rem;">
+                            <i class="bi bi-calendar-event me-1"></i>{{ record.last_updated|date:"m-d H:i" }}
+                        </small>
+                    </div>
+
+                    <div class="mb-2">
+                        {% if record.last_chapter %}
+                            <span class="badge bg-warning text-dark bg-opacity-25 border border-warning border-opacity-25">
+            <i class="bi bi-bookmark-fill me-1 text-warning"></i>
+            学习至：{{ record.last_chapter.title }}
+        </span>
+                        {% else %}
+                            <span class="badge bg-secondary bg-opacity-10 text-muted">
+            <i class="bi bi-circle me-1"></i> 尚未开始章节学习
+        </span>
+                        {% endif %}
+                    </div>
+
+                    <div class="mt-2">
+                        <div class="d-flex justify-content-between text-muted small mb-1">
+                            <span>已学习时长</span>
+                            <span class="fw-bold text-primary">
+                                {% widthratio record.view_duration 60 1 %} 分钟
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 6px; border-radius: 3px;">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 style="width: {% widthratio record.view_duration 2700 100 %}%;" 
+                                 aria-valuenow="{{ record.view_duration }}" aria-valuemin="0" aria-valuemax="2700">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-end mt-3 position-relative" style="z-index: 2;">
+                        {% if record.last_chapter %}
+                            <a href="{% url 'case_chapter' record.case.id record.last_chapter.id %}"
+                               class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">
+                                <i class="bi bi-play-circle-fill me-1"></i> 继续学习
+                            </a>
+                        {% else %}
+                            <a href="{% url 'case_detail' record.case.id %}"
+                               class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">
+                                <i class="bi bi-play-circle-fill me-1"></i> 开始学习
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5 text-muted">
+        <div class="mb-3">
+            <i class="bi bi-journal-bookmark fs-1 opacity-25"></i>
+        </div>
+        <p class="mb-3">暂无学习记录，去案例库看看吧</p>
+        <a href="{% url 'index' %}" class="btn btn-outline-primary rounded-pill px-4 btn-sm">
+            去浏览课程
+        </a>
+    </div>
+{% endif %}

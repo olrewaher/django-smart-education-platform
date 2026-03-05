@@ -1,0 +1,198 @@
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<style>
+    /* 悬浮窗外层容器 */
+    #ai-widget-container {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 380px;
+        height: 550px;
+        min-width: 300px;
+        min-height: 400px;
+        max-width: 800px;
+        max-height: 90vh;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        background: white;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        display: flex;
+        flex-direction: column;
+        z-index: 9999;
+
+        /* 允许右下角拖拽改变大小 */
+        resize: both;
+        overflow: hidden;
+    }
+
+    #ai-widget-header {
+        padding: 12px;
+        background: #00aeec;
+        color: white;
+        font-weight: bold;
+        cursor: move;
+        user-select: none;
+        display: flex;
+        justify-content: space-between;
+        flex-shrink: 0;
+    }
+
+    #ai-chat-history {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        background: #f6f7f8;
+    }
+
+    /* 气泡样式 */
+    .msg-user { text-align: left; color: white; background: #00aeec; padding: 10px 14px; border-radius: 10px 0 10px 10px; margin-bottom: 15px; display: inline-block; max-width: 85%; float: right; clear: both; font-size: 14px; word-wrap: break-word;}
+    .msg-ai { text-align: left; color: #333; background: #fff; padding: 10px 14px; border-radius: 0 10px 10px 10px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: inline-block; max-width: 90%; float: left; clear: both; font-size: 14px; line-height: 1.6; word-wrap: break-word;}
+
+    /* Markdown 排版美化 */
+    .msg-ai p { margin-bottom: 8px; }
+    .msg-ai p:last-child { margin-bottom: 0; }
+    .msg-ai pre { background: #282c34; color: #abb2bf; padding: 12px; border-radius: 6px; overflow-x: auto; margin: 8px 0; font-family: Consolas, Monaco, monospace; font-size: 13px; }
+    .msg-ai code { background: #f0f0f0; color: #e83e8c; padding: 2px 4px; border-radius: 4px; font-family: Consolas, Monaco, monospace; }
+    .msg-ai pre code { background: transparent; color: inherit; padding: 0; }
+    .msg-ai ul, .msg-ai ol { padding-left: 20px; margin-bottom: 8px; }
+
+    #ai-input-area { display: flex; padding: 12px; background: white; border-top: 1px solid #eee; flex-shrink: 0;}
+    #ai-input { flex: 1; padding: 10px; border: 1px solid #e3e5e7; border-radius: 6px; outline: none; font-size: 14px;}
+    #ai-input:focus { border-color: #00aeec; }
+    #ai-send-btn { margin-left: 10px; padding: 0 20px; background: #00aeec; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s;}
+    #ai-send-btn:hover { background: #0091c4; }
+</style>
+
+<div id="ai-widget-container">
+    <div id="ai-widget-header">
+        <span>🤖 智学助教</span>
+    </div>
+    <div id="ai-chat-history">
+        <div class="msg-ai">你好！我是你的专属 AI 助教。关于本节课的内容，有什么我可以帮你的吗？</div>
+    </div>
+    <div id="ai-input-area">
+        <input type="text" id="ai-input" placeholder="请输入关于本案例的疑问 (按回车发送)...">
+        <button id="ai-send-btn">发送</button>
+    </div>
+</div>
+
+<script>
+    // 配置 marked 使用 highlight.js 进行代码高亮
+    marked.setOptions({
+        highlight: function(code, lang) {
+            const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+            return hljs.highlight(code, { language }).value;
+        }
+    });
+
+    (function() {
+        const courseId = "{{ case.id|default:'' }}";
+        const widget = document.getElementById('ai-widget-container');
+        const header = document.getElementById('ai-widget-header');
+        const sendBtn = document.getElementById('ai-send-btn');
+        const inputEl = document.getElementById('ai-input');
+        const historyEl = document.getElementById('ai-chat-history');
+
+        // ==========================================
+        // 1. 拖拽核心逻辑
+        // ==========================================
+        let isDragging = false, startX, startY;
+
+        header.addEventListener('mousedown', function(e) {
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            // 切换为 left/top 绝对定位以便精确拖拽
+            const rect = widget.getBoundingClientRect();
+            widget.style.right = 'auto';
+            widget.style.bottom = 'auto';
+            widget.style.left = rect.left + 'px';
+            widget.style.top = rect.top + 'px';
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            startX = e.clientX;
+            startY = e.clientY;
+            widget.style.left = (widget.offsetLeft + dx) + 'px';
+            widget.style.top = (widget.offsetTop + dy) + 'px';
+        });
+
+        document.addEventListener('mouseup', function() {
+            isDragging = false;
+        });
+
+        // ==========================================
+        // 2. 发送逻辑 (解析 JSON + Markdown)
+        // ==========================================
+        inputEl.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); sendBtn.click(); }
+        });
+
+        sendBtn.onclick = async () => {
+            const query = inputEl.value.trim();
+            if (!query) return;
+
+            historyEl.innerHTML += `<div class="msg-user">${query}</div>`;
+            inputEl.value = '';
+            historyEl.scrollTop = historyEl.scrollHeight;
+
+            const aiMsgEl = document.createElement('div');
+            aiMsgEl.className = 'msg-ai';
+            aiMsgEl.innerHTML = "正在思考...";
+            historyEl.appendChild(aiMsgEl);
+            historyEl.scrollTop = historyEl.scrollHeight;
+
+            try {
+                const response = await fetch('/ai_assistant/chat/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ query: query, course_id: courseId })
+                });
+
+                if (response.headers.get("content-type")?.includes("application/json")) {
+                    const data = await response.json();
+                    aiMsgEl.innerHTML = data.answer || data.error;
+                    return;
+                }
+
+                aiMsgEl.innerHTML = "";
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let fullText = "";
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunkText = decoder.decode(value);
+                    const lines = chunkText.split('\n\n');
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const jsonStr = line.replace('data: ', '');
+                            try {
+                                // 解析后端传来的 JSON
+                                const parsed = JSON.parse(jsonStr);
+                                if (parsed.text) {
+                                    fullText += parsed.text;
+                                    // 实时渲染带高亮的 Markdown
+                                    aiMsgEl.innerHTML = marked.parse(fullText);
+                                    historyEl.scrollTop = historyEl.scrollHeight;
+                                } else if (parsed.error) {
+                                    aiMsgEl.innerHTML = `❌ ${parsed.error}`;
+                                }
+                            } catch(e) { /* 忽略不完整的JSON块 */ }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                aiMsgEl.innerHTML = "❌ 网络连接中断。";
+            }
+        };
+    })();
+</script>

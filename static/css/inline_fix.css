@@ -1,0 +1,49 @@
+/* 修复 Django Admin TabularInline 表头对齐和列宽问题 */
+
+/* 1. 强制表头左对齐 (解决表头文字挤在中间或右边的问题) */
+.inline-group .tabular thead th {
+    text-align: left !important;
+    padding: 8px 10px !important;
+    background-color: #f5f7fa;
+    white-space: nowrap; /* 禁止标题换行 */
+    vertical-align: middle !important;
+}
+
+/* 2. 单元格内容垂直居中 */
+.inline-group .tabular tbody td {
+    vertical-align: middle !important;
+    padding: 8px 10px !important;
+    border-bottom: 1px dashed #eee;
+}
+
+/* 3. 为每一列指定最小宽度 (防止挤压) */
+/* 标题列 */
+.inline-group .tabular .column-title {
+    width: 20%;
+    min-width: 250px;
+}
+/* 类型列 (下拉框) */
+.inline-group .tabular .column-chapter_type {
+    width: 10%;
+    min-width: 120px;
+}
+/* 视频链接列 */
+.inline-group .tabular .column-video_url {
+    width: 25%;
+    min-width: 280px;
+}
+/* 课件列 */
+.inline-group .tabular .column-attachment {
+    width: 15%;
+    min-width: 150px;
+}
+/* 排序列 */
+.inline-group .tabular .column-order {
+    width: 80px;
+    text-align: center;
+}
+/* 删除按钮列 */
+.inline-group .tabular td.delete {
+    width: 60px;
+    text-align: center;
+}

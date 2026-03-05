@@ -1,0 +1,231 @@
+{% load static %}<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}在线案例学习平台{% endblock %}</title>
+
+    <link rel="dns-prefetch" href="https://npm.elemecdn.com">
+    <link rel="preconnect" href="https://npm.elemecdn.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.bootcdn.net">
+
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.2.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap-icons/1.10.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        /* =========================================
+           1. 全局基础样式 (Global Styles)
+           ========================================= */
+        body {
+            padding-top: 76px; /* 避让固定导航栏 */
+            background-color: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* =========================================
+           2. 组件样式优化 (Component Overrides)
+           ========================================= */
+        .card {
+            border: none;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease-in-out;
+        }
+
+        /* 导航栏下拉菜单美化 */
+        .dropdown-menu {
+            border: none;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+        }
+
+        .dropdown-item {
+            border-radius: 0.3rem;
+            transition: background-color 0.2s;
+        }
+
+        .dropdown-item:active {
+            background-color: #0d6efd; /* Bootstrap Primary Color */
+        }
+
+        /* 页面主体内容自动撑开，保证 Footer 沉底 */
+        .main-wrapper {
+            flex: 1;
+        }
+
+        /* 徽标微调 */
+        .role-badge {
+            font-size: 0.7rem;
+            transform: translateY(-1px);
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top shadow-sm" style="min-height: 64px;">
+    <div class="container">
+        <a class="navbar-brand fw-bold d-flex align-items-center" href="{% url 'index' %}">
+            <i class="bi bi-mortarboard-fill me-2 fs-4"></i>
+            <span>思政案例库</span>
+        </a>
+
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto align-items-center">
+                <li class="nav-item me-2">
+                    <a class="nav-link active px-3 rounded-pill hover-bg-light" href="{% url 'index' %}">
+                        <i class="bi bi-house-door me-1"></i> 首页
+                    </a>
+                </li>
+
+                {% if user.is_authenticated %}
+                    <li class="nav-item dropdown ms-lg-3">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center text-white py-1 ps-1 pe-3 bg-white bg-opacity-10 rounded-pill border border-white border-opacity-25"
+                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+
+                            <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center me-2 shadow-sm"
+                                 style="width: 32px; height: 32px; font-weight: bold; font-size: 0.9rem;">
+                                {{ user.username.0|upper }}
+                            </div>
+
+                            <span class="small fw-bold me-2">{{ user.username }}</span>
+
+                            {% if user.is_superuser %}
+                                <span class="badge rounded-pill bg-warning text-dark role-badge">超级管理员</span>
+                            {% elif user.profile.role == 'admin' %}
+                                <span class="badge rounded-pill bg-danger role-badge">管理员</span>
+                            {% elif user.profile.role == 'teacher' %}
+                                <span class="badge rounded-pill bg-info text-dark role-badge">教师</span>
+                            {% endif %}
+                        </a>
+
+                        <ul class="dropdown-menu dropdown-menu-end mt-2 animate__animated animate__fadeIn">
+                            <li><h6 class="dropdown-header text-muted small">账户管理</h6></li>
+                            <li>
+                                <a class="dropdown-item py-2" href="{% url 'profile' %}">
+                                    <i class="bi bi-person-gear me-2 text-primary"></i>个人中心
+                                </a>
+                            </li>
+
+                            {% if user.is_staff %}
+                            <li>
+                                <a class="dropdown-item py-2" href="/admin/" target="_blank">
+                                    <i class="bi bi-speedometer2 me-2 text-success"></i>管理后台
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form action="{% url 'logout' %}" method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item py-2 text-danger w-100 text-start">
+                                        <i class="bi bi-box-arrow-right me-2"></i>退出登录
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li class="nav-item ms-2">
+                        <a class="btn btn-outline-light btn-sm rounded-pill px-3 fw-bold border-2" href="{% url 'login' %}">
+                            <i class="bi bi-person me-1"></i> 学生登录
+                        </a>
+                    </li>
+                    <li class="nav-item ms-2">
+                        <a class="btn btn-light text-primary btn-sm rounded-pill px-3 fw-bold border-2" href="/admin/">
+                            <i class="bi bi-person-badge-fill me-1"></i> 教师后台
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="{% block layout_container %}container{% endblock %} main-wrapper animate__animated animate__fadeIn">
+    {% block content %}{% endblock %}
+</div>
+
+<footer class="text-center py-4 text-muted border-top mt-5 bg-white">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-12">
+                <p class="mb-0 small">
+                    &copy; 2025 在线案例学习平台 <span class="mx-2">|</span> 毕业设计作品
+                </p>
+                <p class="mb-0 mt-1 small text-black-50">
+                    Designed for Education
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script>
+    (function() {
+        const GLOBAL_RESOURCES = [
+            {
+                name: 'Bootstrap Bundle',
+                sources: [
+                    // 1. 优先白嫖大厂 CDN (节省服务器流量)
+                    'https://npm.elemecdn.com/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js',
+                    'https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/js/bootstrap.bundle.min.js',
+                    // 2. 只有当前服务面都挂了，才吃自己的带宽 (保命兜底)
+                    "{% static 'js/bootstrap.bundle.min.js' %}"
+                ]
+            }
+        ];
+
+        function loadResource(res) {
+            let index = 0;
+
+            function tryNext() {
+                if (index >= res.sources.length) {
+                    console.error(`❌ [SRE] 全部资源加载失败: ${res.name}`);
+                    return;
+                }
+
+                const url = res.sources[index];
+                const script = document.createElement('script');
+                script.src = url;
+                // ⚠ crossOrigin 对于 CDN 很重要，但对于本地文件如果没配好 CORS 可能会报错
+                //判断：如果是 http 开头的 (CDN) 就加跨域标头，本地的不加
+                if (url.startsWith('http')) {
+                    script.crossOrigin = 'anonymous';
+                }
+
+                script.onload = () => {
+                    //  成功！不管是 CDN 还是本地，只要加载了一个，任务就结束
+                    console.log(`✅ [SRE] 资源加载成功: ${res.name} (源: ${index+1})`);
+                };
+
+                script.onerror = () => {
+                    console.warn(`⚠️ [SRE] 源 ${index+1} (${url}) 加载失败，切换备用源...`);
+                    script.remove(); // 清理垃圾 DOM
+                    index++;         // 指针下移
+                    tryNext();       // 递归尝试
+                };
+
+                document.body.appendChild(script);
+            }
+
+            tryNext();
+        }
+
+        GLOBAL_RESOURCES.forEach(loadResource);
+    })();
+</script>
+
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>

@@ -1,0 +1,115 @@
+/* ==========================================================================
+   Admin Unify Theme - 教师端风格统一化
+   目标：将教师端后台强制整容为与学生端一致的“品牌蓝” + “胶囊圆角”风格
+   ========================================================================== */
+
+:root {
+    --brand-blue: #0d6efd;       /* 学生端主色 */
+    --brand-blue-hover: #0b5ed7;
+    --brand-dark-blue: #0a58ca;  /* 深蓝（用于强调） */
+    --bg-light: #f8f9fa;
+}
+
+/* 1. 全局重置 */
+body {
+    background-color: #f4f6f9 !important; /* 浅灰蓝背景，比纯白更有质感 */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* 2. 按钮胶囊化 (Capsule Buttons) - 核心统一 */
+.el-button {
+    border-radius: 50px !important; /* 强制大圆角 */
+    font-weight: 600;
+    border: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+}
+.el-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+/* 蓝色主按钮 */
+.el-button--primary {
+    background-color: var(--brand-blue) !important;
+    background-image: linear-gradient(135deg, var(--brand-blue), var(--brand-blue-hover));
+}
+.el-button--success {
+    background-color: #198754 !important;
+    background-image: linear-gradient(135deg, #198754, #157347);
+}
+.el-button--danger {
+    background-color: #dc3545 !important;
+    background-image: linear-gradient(135deg, #dc3545, #bb2d3b);
+}
+
+/* 3. 输入框圆润化 */
+.el-input__inner {
+    border-radius: 20px !important;
+    border: 1px solid #dee2e6 !important;
+    padding-left: 15px !important;
+    background-color: #fff;
+    transition: all 0.3s;
+}
+.el-input__inner:focus {
+    border-color: var(--brand-blue) !important;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15) !important;
+}
+
+/* 4. 卡片柔和化 */
+.role-card {
+    border: none !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03) !important;
+    background: #fff;
+}
+
+/* 5. 标签与徽标 */
+.el-tag {
+    border-radius: 12px !important;
+    border: none !important;
+    font-weight: 600;
+}
+/* 覆盖 ElementUI 默认的浅色标签背景 */
+.el-tag--warning { background-color: #fff3cd; color: #856404; }
+.el-tag--primary { background-color: #cfe2ff; color: #084298; }
+.el-tag--info { background-color: #e2e3e5; color: #41464b; }
+
+/* 6. 弹窗 (Dialog) 统一 */
+.el-dialog {
+    border-radius: 16px !important;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+.el-dialog__header {
+    background-color: var(--bg-light);
+    padding: 20px 25px;
+    border-bottom: 1px solid #eee;
+}
+.el-dialog__title {
+    font-weight: 700;
+    color: #333;
+}
+.el-dialog__footer {
+    padding: 20px 25px;
+    background-color: var(--bg-light);
+    border-top: 1px solid #eee;
+}
+
+/* 7. 单选框 (Radio) 胶囊化 */
+.el-radio.is-bordered {
+    border-radius: 20px !important;
+    background-color: #fff;
+    border-color: #eee;
+}
+.el-radio.is-bordered.is-checked {
+    border-color: var(--brand-blue) !important;
+    background-color: #ecf5ff;
+}
+.el-radio__input.is-checked + .el-radio__label {
+    color: var(--brand-blue) !important;
+}
+.el-radio__input.is-checked .el-radio__inner {
+    border-color: var(--brand-blue);
+    background: var(--brand-blue);
+}

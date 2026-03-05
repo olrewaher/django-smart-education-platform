@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}个人中心 - {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm border-0 text-center py-4">
+            <div class="card-body">
+                <div class="mb-3 mx-auto bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow"
+                     style="width: 80px; height: 80px; font-size: 2rem;">
+                    {{ computed_avatar }}
+                </div>
+
+                <h4 class="fw-bold mb-1">{{ user.username }}</h4>
+                <p class="text-muted small mb-3">{{ user.email|default:"未绑定邮箱" }}</p>
+
+                <div class="d-flex justify-content-center gap-3 text-center mb-4">
+                    <div>
+                        <h5 class="fw-bold mb-0">{{ favorites.count }}</h5>
+                        <small class="text-muted">收藏</small>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">{{ comments.count }}</h5>
+                        <small class="text-muted">评论</small>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">{{ user.date_joined|date:"Y" }}</h5>
+                        <small class="text-muted">入驻年份</small>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 px-3">
+                    <form action="{% url 'logout' %}" method="post">
+                        {% csrf_token %}
+                        <button class="btn btn-outline-danger w-100 rounded-pill">退出登录</button>
+                    </form>
+                </div>
+            </div>  {% include 'student_web/components/study_calendar.html' %}
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                <ul class="nav nav-tabs card-header-tabs" id="profileTab" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active fw-bold" data-bs-toggle="tab" data-bs-target="#favs">
+                            <i class="bi bi-star-fill text-warning me-1"></i> 我的收藏
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#progress">
+                            <i class="bi bi-clock-history text-success me-1"></i> 学习进度
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#comments">
+                            <i class="bi bi-chat-dots-fill text-info me-1"></i> 评论记录
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold position-relative" data-bs-toggle="tab"
+                                data-bs-target="#notifications">
+                            <i class="bi bi-bell-fill text-danger me-1"></i> 消息盒子
+                            {% if unread_count > 0 %}
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                      style="font-size: 0.6rem;">
+                                    {{ unread_count }}
+                                </span>
+                            {% endif %}
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#notes">
+                            <i class="bi bi-journal-text text-primary me-1"></i> 我的笔记
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#settings">
+                            <i class="bi bi-gear-fill text-secondary me-1"></i> 信息设置
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card-body p-4">
+                <div class="tab-content" id="profileTabContent">
+
+                    <div class="tab-pane fade show active" id="favs">
+                        {% if favorites %}
+                            <div class="list-group list-group-flush">
+                                {% for fav in favorites %}
+                                <a href="{% url 'case_detail' fav.case.id %}" class="list-group-item list-group-item-action py-3 d-flex align-items-center border-bottom-0 rounded mb-2 bg-light">
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <h6 class="mb-0 fw-bold text-dark">{{ fav.case.title }}</h6>
+                                            <span class="badge bg-secondary bg-opacity-10 text-dark rounded-pill">{{ fav.case.category.name }}</span>
+                                        </div>
+                                        <small class="text-muted">收藏于 {{ fav.created_at|date:"Y-m-d H:i" }}</small>
+                                    </div>
+                                    <i class="bi bi-chevron-right text-muted"></i>
+                                </a>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5 text-muted">
+                                <i class="bi bi-folder2-open fs-1 opacity-25"></i>
+                                <p class="mt-2">暂无收藏，去案例库看看吧</p>
+                                <a href="{% url 'index' %}" class="btn btn-primary btn-sm rounded-pill px-4">去浏览</a>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="tab-pane fade" id="comments">
+                        {% if comments %}
+                            <div class="timeline">
+                                {% for comment in comments %}
+                                <div class="d-flex mb-3 pb-3 border-bottom">
+                                    <div class="flex-shrink-0 mt-1">
+                                        <i class="bi bi-chat-quote-fill text-primary fs-5"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <p class="mb-1 text-dark">{{ comment.content }}</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">
+                                                发表于 <a href="{% url 'case_detail' comment.case.id %}" class="text-decoration-none">{{ comment.case.title }}</a>
+                                            </small>
+                                            <small class="text-muted">{{ comment.created_at|date:"m-d H:i" }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5 text-muted">暂无评论记录</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="tab-pane fade" id="notifications">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="text-muted mb-0">最近的消息</h6>
+                            {% if unread_count > 0 %}
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="markAllAsRead()">
+                                    <i class="bi bi-check2-all"></i> 全部标为已读
+                                </button>
+                            {% endif %}
+                        </div>
+
+                        {% if notifications %}
+                            <div class="list-group list-group-flush">
+                                {% for msg in notifications %}
+                                    <a href="{% url 'case_detail' msg.case.id %}"
+                                       class="list-group-item list-group-item-action py-3 border-bottom-0 rounded mb-2 {% if not msg.is_read %}bg-white border border-primary border-opacity-25 shadow-sm{% else %}bg-light{% endif %}">
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-shrink-0">
+                                                {% if not msg.is_read %}
+                                                    <span class="d-inline-block bg-danger rounded-circle p-1 me-2"></span>
+                                                {% else %}
+                                                    <i class="bi bi-envelope-open text-muted me-2 fs-5"></i>
+                                                {% endif %}
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1 fw-bold text-dark">
+                                                    {{ msg.sender.username|default:"系统通知" }}
+                                                </h6>
+                                                <p class="mb-0 text-secondary"
+                                                   style="font-size: 14px;">{{ msg.content }}</p>
+                                            </div>
+                                            <div class="text-end">
+                                                <small class="text-muted">{{ msg.created_at|date:"m-d H:i" }}</small>
+                                            </div>
+                                        </div>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5 text-muted">
+                                <i class="bi bi-bell-slash fs-1 opacity-25"></i>
+                                <p class="mt-2">暂无任何消息</p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="tab-pane fade" id="notes">
+                        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                            <h6 class="text-muted mb-0">共收录 {{ notes.count }} 条笔记</h6>
+                            {% if notes %}
+                                <a href="{% url 'export_notes' %}"
+                                   class="btn btn-sm btn-outline-primary rounded-pill shadow-sm" target="_blank">
+                                    <i class="bi bi-cloud-download me-1"></i> 笔记导出（html格式）
+                                </a>
+                            {% endif %}
+                        </div>
+                        {% if notes %}
+                            <div class="list-group list-group-flush">
+                                {% for note in notes %}
+                                    <div class="list-group-item py-3 border-bottom-0 rounded mb-3 bg-light shadow-sm">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="mb-0 fw-bold">
+                                                {% if note.chapter %}
+                                                    <a href="{% url 'case_chapter' note.case.id note.chapter.id %}"
+                                                       class="text-decoration-none text-dark">
+                                                        <i class="bi bi-book me-1 text-primary"></i> {{ note.case.title }}
+                                                        <span class="text-muted fw-normal fs-6 ms-2">/ {{ note.chapter.title }}</span>
+                                                    </a>
+                                                {% else %}
+                                                    <a href="{% url 'case_detail' note.case.id %}"
+                                                       class="text-decoration-none text-dark">
+                                                        <i class="bi bi-book me-1 text-primary"></i> {{ note.case.title }}
+                                                    </a>
+                                                {% endif %}
+                                            </h6>
+                                            <small class="text-muted">{{ note.created_at|date:"Y-m-d H:i" }}</small>
+                                        </div>
+                                        <div class="text-secondary" style="font-size: 15px; line-height: 1.6;">
+                                            {{ note.content }}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5 text-muted">
+                                <i class="bi bi-journal-x fs-1 opacity-25"></i>
+                                <p class="mt-2">暂无笔记，在学习中记录你的灵感吧！</p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="tab-pane fade" id="progress">
+                        {% include 'student_web/components/study_progress_list.html' %}
+                    </div>
+
+                    <div class="tab-pane fade" id="settings">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label class="form-label text-muted small">用户账号 (不可修改)</label>
+                                <input type="text" class="form-control bg-light" value="{{ user.username }}" disabled>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">我的昵称</label>
+                                <input type="text" name="nickname" class="form-control" value="{{ user.first_name }}" placeholder="设置一个好听的昵称">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">邮箱地址</label>
+                                <input type="email" name="email" class="form-control" value="{{ user.email }}" placeholder="用于找回密码">
+                            </div>
+                            <div class="mt-4 text-end">
+                                <button type="submit" class="btn btn-success rounded-pill px-4">
+                                    <i class="bi bi-check-circle me-1"></i> 保存修改
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <script>
+        function markAllAsRead() {
+            fetch("{% url 'read_notifications' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            }).then(res => res.json()).then(data => {
+                if (data.status === 'success') {
+                    window.location.reload(); // 刷新页面消掉红点
+                }
+            });
+        }
+    </script>
+{% endblock %}

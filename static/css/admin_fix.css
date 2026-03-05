@@ -1,0 +1,56 @@
+/* * 修复 SimpleUI/Django Admin TabularInline 表格对齐问题
+ * 路径: static/css/admin_fix.css
+ */
+
+/* 1. 强制纠正表头对齐 */
+.inline-group .tabular thead th {
+    text-align: left !important;      /* 强制标题左对齐，与输入框对齐 */
+    padding: 12px 10px !important;    /* 增加表头内边距，提升呼吸感 */
+    background-color: #f5f7fa;        /* 浅灰背景，视觉区分更明显 */
+    border-bottom: 2px solid #e4e7ed; /* 加重分割线 */
+    white-space: nowrap;              /* 禁止标题换行 */
+    vertical-align: middle !important;
+}
+
+/* 2. 优化表格单元格垂直居中 */
+.inline-group .tabular tbody td {
+    vertical-align: middle !important; /* 让输入框、文字、按钮都在垂直中线上 */
+    padding: 8px 10px !important;      /* 单元格间距 */
+    border-bottom: 1px dashed #ebeef5; /* 使用虚线分割行，视觉更轻盈 */
+}
+
+/* 3. 针对“删除”列的特殊处理 */
+.inline-group .tabular td.delete {
+    width: 60px;
+    text-align: center !important;
+}
+.inline-group .tabular th.column-delete {
+    text-align: center !important;
+}
+
+/* 4. 关键：为不同类型的列指定最小宽度，防止挤压 */
+/* 注意：这里对应的是字段名，Django会自动生成 column-字段名 的类 */
+
+.inline-group .tabular .column-title {
+    width: 30%;
+    min-width: 250px; /* 标题列最少给250px */
+}
+
+.inline-group .tabular .column-chapter_type {
+    width: 10%;
+    min-width: 100px;
+}
+
+.inline-group .tabular .column-video_url {
+    width: 25%;
+    min-width: 200px;
+}
+
+.inline-group .tabular .column-attachment {
+    width: 20%;
+    min-width: 150px;
+}
+
+.inline-group .tabular .column-order {
+    width: 80px;
+}

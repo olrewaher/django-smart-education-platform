@@ -1,0 +1,37 @@
+/* --- static/admin/css/custom_inline_fix.css --- */
+
+/* 1. 修复 TabularInline 表头错位问题 */
+.inline-group .tabular thead th {
+    text-align: left !important;  /* 强制左对齐 */
+    padding: 10px 15px !important; /* 增加舒适的间距 */
+    background-color: #f8f9fa;    /* 浅灰背景，区分表头 */
+    color: #333;
+    font-weight: bold;
+    border-bottom: 2px solid #eaeaea;
+    white-space: nowrap;          /* 防止标题换行 */
+}
+
+/* 2. 修复表格内容的垂直对齐 */
+.inline-group .tabular tbody td {
+    vertical-align: middle !important; /* 让输入框和按钮垂直居中 */
+    padding: 12px 15px !important;
+    border-bottom: 1px solid #eee;
+}
+
+/* 3. 针对 SimpleUI 的特殊修复 (去掉可能导致错位的多余 Padding) */
+.inline-group .tabular tr.has_original td {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+/* 4. 优化“删除”复选框的位置 */
+.inline-group .tabular td.delete {
+    text-align: center;
+    width: 60px;
+}
+
+/* 5. 针对原本截图中的“章书标题”等文字对不齐输入框的问题 */
+/* 强制给列定义最小宽度，防止挤压 */
+.inline-group .tabular .column-title { min-width: 200px; }
+.inline-group .tabular .column-chapter_type { min-width: 100px; }
+.inline-group .tabular .column-video_url { min-width: 200px; }

@@ -1,0 +1,41 @@
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-4">
+        <form method="get" action="." class="row g-3 align-items-end">
+
+            <div class="col-md-5">
+                <label class="form-label fw-bold text-secondary small">关键词检索</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="q" class="form-control border-start-0 ps-0"
+                           placeholder="搜索课程标题或描述..."
+                           value="{{ request.GET.q|default:'' }}">
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold text-secondary small">思政主题分类</label>
+                <select name="category" class="form-select">
+                    <option value="">-- 全部主题 --</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if request.GET.category|add:"0" == cat.id %}selected{% endif %}>
+                        {{ cat.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <div class="d-grid gap-2 d-md-block">
+                    <button type="submit" class="btn btn-primary fw-bold px-4">
+                        <i class="bi bi-funnel-fill me-1"></i> 筛选
+                    </button>
+                    {% if request.GET.q or request.GET.category %}
+                    <a href="{% url 'index' %}" class="btn btn-outline-secondary px-3" title="重置条件">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
